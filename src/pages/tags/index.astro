@@ -23,7 +23,7 @@ const t = useTranslations(locale);
   <Breadcrumb />
 
   <Main pageTitle={t.pages.tagsTitle} pageDesc={t.pages.tagsDesc}>
-    <ul class="flex flex-col gap-4">
+    <ul class="flex flex-col gap-4 items-start">
       {tags.map(({ tag, tagName }) => <Tag {tag} {tagName} />)}
     </ul>
   </Main>
