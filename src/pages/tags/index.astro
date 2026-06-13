@@ -2,15 +2,17 @@
 import { getCollection } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
-import Breadcrumb from "@/components/Breadcrumb.astro";
-import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
-import Tag from "@/components/Tag.astro";
+import Datetime from "@/components/Datetime.astro";
+import { getPostUrl } from "@/utils/getPostPaths";
 import { getUniqueTags } from "@/utils/getUniqueTags";
+import { getSortedPosts } from "@/utils/getSortedPosts";
+import { toTransitionName } from "@/utils/toTransitionName";
 import { useTranslations } from "@/i18n";
 import config from "@/config";
 
 const posts = await getCollection("posts", ({ data }) => !data.draft);
+const sortedPosts = getSortedPosts(posts);
 const tags = getUniqueTags(posts);
 
 const locale = Astro.currentLocale ?? config.site.lang;
@@ -20,13 +22,80 @@ const t = useTranslations(locale);
 <Layout title={`${t.pages.tagsTitle} | ${config.site.title}`}>
   <Header />
 
-  <Breadcrumb />
+  <main id="main-content" class="app-layout pb-4">
+    <div class="flex gap-8 mt-4">
+      <!-- 左侧标签列表 -->
+      <div class="w-28 sm:w-36 shrink-0">
+        <h2 class="text-sm font-semibold mb-3 text-muted-foreground">分类</h2>
+        <ul class="flex flex-col gap-1" id="tag-list">
+          <li>
+            <button data-tag="all" class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors font-medium">
+              全部
+            </button>
+          </li>
+          {tags.map(({ tag, tagName }) => (
+            <li>
+              <button data-tag={tag} class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">
+                #{tagName}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-  <Main pageTitle={t.pages.tagsTitle} pageDesc={t.pages.tagsDesc}>
-    <ul class="flex flex-col gap-4 items-start">
-      {tags.map(({ tag, tagName }) => <Tag {tag} {tagName} />)}
-    </ul>
-  </Main>
+      <!-- 右侧文章列表 -->
+      <div class="flex-1 min-w-0" id="article-list">
+        <p class="text-xs text-muted-foreground mb-3" id="result-count">全部文章（{sortedPosts.length}篇）</p>
+        <ul class="flex flex-col gap-3">
+          {sortedPosts.map(({ id, data, filePath }) => {
+            const { title, tags: postTags, ...rest } = data;
+            const postUrl = getPostUrl(id, filePath, locale);
+            return (
+              <li class="article-item" data-tags={(postTags || []).join(",")}>
+                <a href={postUrl} class="block border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 class="text-sm font-bold mb-0.5">{title}</h3>
+                  <p class="text-xs text-muted-foreground line-clamp-1">{data.description}</p>
+                  <div class="text-[3px] text-muted-foreground mt-1">
+                    <Datetime {...rest} />
+                  </div>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  </main>
 
   <Footer />
 </Layout>
+
+<script>
+  const tagBtns = document.querySelectorAll(".tag-btn");
+  const articles = document.querySelectorAll(".article-item");
+  const resultCount = document.getElementById("result-count");
+
+  tagBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      // 高亮当前标签
+      tagBtns.forEach(b => b.classList.remove("bg-accent/10", "text-accent", "font-medium"));
+      btn.classList.add("bg-accent/10", "text-accent", "font-medium");
+
+      const tag = btn.dataset.tag;
+      let count = 0;
+      articles.forEach(article => {
+        const articleTags = article.dataset.tags;
+        if (tag === "all" || articleTags.includes(tag)) {
+          article.style.display = "block";
+          count++;
+        } else {
+          article.style.display = "none";
+        }
+      });
+      resultCount.textContent = tag === "all" ? `全部文章（${count}篇）` : `#${btn.textContent.trim()}（${count}篇）`;
+    });
+  });
+
+  // 默认选中"全部"
+  document.querySelector('[data-tag="all"]')?.click();
+</script>
