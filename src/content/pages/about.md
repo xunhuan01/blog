@@ -3,14 +3,10 @@ title: "关于"
 description: "焦羽的个人简介"
 ---
 
-## 关于我
+<img src="/avatar.png" alt="焦羽" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 16px" />
 
-我是焦羽。
+## 焦羽
 
-写小说，也写点别的。这个博客用来放我写的东西。
+皮条客
 
-### 联系方式
-
-- Email：——
-
-有话说可以直接留言。
+写小说，也写点别的。

@@ -14,11 +14,11 @@ const { title, description, tags, featured, ...props } = data;
 const category = tags?.[0] || "";
 ---
 
-<li class="border border-border rounded-lg p-5 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+<li class="border border-border rounded-lg p-3 flex flex-col shadow-sm hover:shadow-md transition-shadow max-w-[340px] mx-auto w-full">
   <!-- 置顶 + 分类 + 日期 -->
-  <div class="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+  <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
     {
-      featured && <span class="bg-accent/10 text-accent px-1.5 py-0.5 rounded">置顶</span>
+      featured && <span class="bg-accent/10 text-accent px-1 py-0.5 rounded text-[10px]">置顶</span>
     }
     {
       category && (
@@ -31,11 +31,11 @@ const category = tags?.[0] || "";
   <!-- 标题 -->
   <a
     href={getPostUrl(id, filePath, Astro.currentLocale)}
-    class="inline-block mb-2"
+    class="inline-block mb-1"
   >
     <Heading
       transition:name={toTransitionName(title)}
-      class="text-base font-bold hover:text-accent transition-colors leading-snug"
+      class="text-sm font-bold hover:text-accent transition-colors leading-snug"
     >
       {title}
     </Heading>
@@ -44,14 +44,14 @@ const category = tags?.[0] || "";
   <!-- 摘要 -->
   {
     description && (
-      <p class="text-sm text-muted-foreground leading-relaxed flex-1 line-clamp-3">{description}</p>
+      <p class="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-1">{description}</p>
     )
   }
 
   <!-- 阅读更多 -->
   <a
     href={getPostUrl(id, filePath, Astro.currentLocale)}
-    class="inline-block mt-3 text-xs text-accent hover:underline"
+    class="inline-block text-[11px] text-accent hover:underline"
   >
     阅读更多 →
   </a>
