@@ -28,7 +28,7 @@ const t = useTranslations(locale);
       <div class="w-28 sm:w-36 shrink-0">
         <ul class="flex flex-col gap-1" id="tag-list">
           <li>
-            <button data-tag="all" class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors font-medium">
+            <button data-tag="all" class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors font-medium bg-accent/10 text-accent">
               全部
             </button>
           </li>
@@ -70,7 +70,8 @@ const t = useTranslations(locale);
 </Layout>
 
 <script>
-  const tagBtns = document.querySelectorAll(".tag-btn");
+  function initTagPage() {
+    const tagBtns = document.querySelectorAll(".tag-btn");
   const articles = document.querySelectorAll(".article-item");
   const resultCount = document.getElementById("result-count");
 
@@ -97,4 +98,8 @@ const t = useTranslations(locale);
 
   // 默认选中"全部"
   document.querySelector('[data-tag="all"]')?.click();
+  }
+
+  initTagPage();
+  document.addEventListener("astro:page-load", initTagPage);
 </script>
