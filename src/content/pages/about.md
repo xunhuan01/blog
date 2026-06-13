@@ -3,10 +3,12 @@ title: "关于"
 description: "焦羽的个人简介"
 ---
 
-<img src="/avatar.png" alt="焦羽" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 16px" />
+<div style="text-align:center;padding-top:40px">
+  <img src="/avatar.png" alt="焦羽" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 12px" />
 
-## 焦羽
+  <h2 style="font-size:18px;font-weight:700;margin:0 0 4px">焦羽</h2>
 
-皮条客
-
-写小说，也写点别的。
+  <div style="background:#f5f5f5;border-radius:8px;padding:16px 20px;max-width:400px;margin:12px auto 0;font-size:13px;color:#666;line-height:1.6">
+    皮条客
+  </div>
+</div>

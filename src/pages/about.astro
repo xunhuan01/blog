@@ -2,8 +2,6 @@
 import { getEntry, render } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
-import Breadcrumb from "@/components/Breadcrumb.astro";
-import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
 import config from "@/config";
 
@@ -26,11 +24,9 @@ const { Content } = await render(about);
 >
   <Header />
 
-  <Breadcrumb />
-
-  <Main pageTitle={about.data.title} class="app-prose">
+  <main id="main-content" class="app-layout pb-4">
     <Content />
-  </Main>
+  </main>
 
   <Footer />
 </Layout>
