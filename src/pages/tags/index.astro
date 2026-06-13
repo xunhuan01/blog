@@ -34,7 +34,7 @@ const t = useTranslations(locale);
           </li>
           {tags.map(({ tag, tagName }) => (
             <li>
-              <button data-tag={tag} class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">
+              <button data-tag={tagName} class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">
                 #{tagName}
               </button>
             </li>
