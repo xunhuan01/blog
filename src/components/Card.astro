@@ -1,0 +1,58 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getPostUrl } from "@/utils/getPostPaths";
+import { toTransitionName } from "@/utils/toTransitionName";
+import Datetime from "./Datetime.astro";
+
+type Props = {
+  variant?: "h2" | "h3";
+} & CollectionEntry<"posts">;
+
+const { variant: Heading = "h2", id, data, filePath } = Astro.props;
+
+const { title, description, tags, featured, ...props } = data;
+const category = tags?.[0] || "";
+---
+
+<li class="border border-border rounded-lg p-5 flex flex-col shadow-sm hover:shadow-md transition-shadow">
+  <!-- 置顶 + 分类 + 日期 -->
+  <div class="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+    {
+      featured && <span class="bg-accent/10 text-accent px-1.5 py-0.5 rounded">置顶</span>
+    }
+    {
+      category && (
+        <span class="text-accent font-medium">{category}</span>
+      )
+    }
+    <Datetime {...props} />
+  </div>
+
+  <!-- 标题 -->
+  <a
+    href={getPostUrl(id, filePath, Astro.currentLocale)}
+    class="inline-block mb-2"
+  >
+    <Heading
+      transition:name={toTransitionName(title)}
+      class="text-base font-bold hover:text-accent transition-colors leading-snug"
+    >
+      {title}
+    </Heading>
+  </a>
+
+  <!-- 摘要 -->
+  {
+    description && (
+      <p class="text-sm text-muted-foreground leading-relaxed flex-1 line-clamp-3">{description}</p>
+    )
+  }
+
+  <!-- 阅读更多 -->
+  <a
+    href={getPostUrl(id, filePath, Astro.currentLocale)}
+    class="inline-block mt-3 text-xs text-accent hover:underline"
+  >
+    阅读更多 →
+  </a>
+</li>

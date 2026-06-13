@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手机预览</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f0f0f0;display:flex;flex-direction:column;align-items:center;padding:30px 10px;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+h2{font-size:16px;margin:0 0 8px;color:#333;text-align:center}
+.sub{font-size:12px;color:#888;margin-bottom:20px;text-align:center}
+.phone-shell{background:#1a1a1a;border-radius:40px;padding:12px;width:375px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.phone-screen{background:#fff;border-radius:32px;overflow:hidden;height:720px;position:relative}
+.statusbar{display:flex;justify-content:space-between;padding:10px 20px 6px;font-size:11px;color:#1a1a1a;font-weight:600}
+
+/* 顶部 */
+.header{display:flex;align-items:center;justify-content:center;padding:8px 16px 12px;border-bottom:1px solid #eee;position:relative}
+.header .logo{font-size:18px;font-weight:700}
+.search-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:18px;color:#1a1a1a;cursor:pointer;text-decoration:none}
+
+/* 可滚动内容 */
+.scroll{height:536px;overflow-y:auto;padding-bottom:60px}
+.scroll::-webkit-scrollbar{width:0}
+.card{border:1px solid #e5e5e5;border-radius:10px;padding:14px;margin:12px 16px 0;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.card .meta{display:flex;align-items:center;gap:6px;font-size:11px;color:#888;margin-bottom:5px}
+.card .meta .p{background:#f2f2f2;padding:1px 6px;border-radius:3px;color:#666}
+.card .meta .c{color:#2563eb;font-weight:500}
+.card h3{font-size:15px;font-weight:700;line-height:1.35;margin-bottom:4px}
+.card p{font-size:13px;color:#666;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px}
+.card a{font-size:12px;color:#2563eb;text-decoration:none}
+
+/* 底部导航 */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:#fff;border-top:1px solid #eee;padding:6px 0;z-index:10}
+.bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11px;color:#888;text-decoration:none}
+.bottom-nav a.active{color:#2563eb}
+.bottom-nav a svg{width:20px;height:20px}
+</style>
+</head>
+<body>
+
+<h2>📱 焦羽博客 — 手机端</h2>
+<p class="sub">顶部居中站点名 + 🔍搜索 | 底部固定导航</p>
+
+<div class="phone-shell">
+<div class="phone-screen">
+
+  <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
+
+  <!-- 顶部栏 -->
+  <div class="header">
+    <div class="logo">焦羽.blog</div>
+    <a class="search-icon" href="#">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    </a>
+  </div>
+
+  <!-- 文章列表 -->
+  <div class="scroll" id="page-home">
+    <div class="card">
+      <div class="meta">
+        <span class="p">置顶</span>
+        <span class="c">小说</span>
+        <span>2025年6月12日</span>
+      </div>
+      <h3>无暇赴死</h3>
+      <p>2015年，一个陌生女人在律所门口拦住我，声称我手头一桩案子另有隐情……</p>
+      <a href="#">阅读更多 →</a>
+    </div>
+    <div class="card" style="opacity:0.45">
+      <div class="meta"><span class="c">AI</span><span>2026年6月10日</span></div>
+      <h3>（新文章示例）</h3>
+      <p>文章摘要显示在这里……</p>
+      <a href="#">阅读更多 →</a>
+    </div>
+    <div class="card" style="opacity:0.45">
+      <div class="meta"><span class="c">两性</span><span>2026年6月8日</span></div>
+      <h3>（新文章示例）</h3>
+      <p>文章摘要显示在这里……</p>
+      <a href="#">阅读更多 →</a>
+    </div>
+  </div>
+
+  <!-- 分类页 -->
+  <div class="scroll" id="page-tags" style="display:none">
+    <p style="font-size:13px;color:#888;padding:12px 16px 0">所有分类：</p>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:8px 16px">
+      <span style="background:#eef4ff;color:#2563eb;padding:8px 14px;border-radius:6px;font-size:14px;cursor:pointer;width:fit-content;min-width:80px">小说</span>
+      <span style="background:#f0f0f0;color:#666;padding:8px 14px;border-radius:6px;font-size:14px;cursor:pointer;width:fit-content;min-width:80px">皮条往事</span>
+      <span style="background:#f0f0f0;color:#666;padding:8px 14px;border-radius:6px;font-size:14px;cursor:pointer;width:fit-content;min-width:80px">哲学</span>
+      <span style="background:#f0f0f0;color:#666;padding:8px 14px;border-radius:6px;font-size:14px;cursor:pointer;width:fit-content;min-width:80px">杂谈</span>
+    </div>
+  </div>
+
+  <!-- 作者页 -->
+  <div class="scroll" id="page-about" style="display:none">
+    <div style="padding:16px;text-align:center">
+      <div style="width:64px;height:64px;border-radius:50%;background:#ddd;margin:20px auto 12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#888">焦</div>
+      <h3 style="font-size:16px;font-weight:700">焦羽</h3>
+      <p style="font-size:13px;color:#888;margin-top:4px">皮条客</p>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <div class="bottom-nav">
+    <a href="#" class="active" onclick="switchPage('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span>文章</span>
+    </a>
+    <a href="#" onclick="switchPage('tags')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+      <span>分类</span>
+    </a>
+    <a href="#" onclick="switchPage('about')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>作者</span>
+    </a>
+  </div>
+
+</div>
+</div>
+
+<p style="max-width:375px;margin-top:14px;font-size:12px;color:#999;line-height:1.6;text-align:center">
+  ✅ 顶部：焦羽.blog 居中 | 🔍 搜索<br>
+  ✅ 底部：文章 / 分类 / 作者 横向排列，固定不动<br>
+  部署后手机打开 waiwei.top 就是一模一样的效果
+</p>
+
+<script>
+function switchPage(page) {
+  document.getElementById('page-home').style.display = 'none';
+  document.getElementById('page-tags').style.display = 'none';
+  document.getElementById('page-about').style.display = 'none';
+  document.getElementById('page-' + page).style.display = 'block';
+  document.querySelectorAll('.bottom-nav a').forEach(function(a) { a.classList.remove('active'); });
+  event.target.closest('a').classList.add('active');
+}
+</script>
+</body>
+</html>

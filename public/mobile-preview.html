@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>焦羽 - 手机预览</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #fff;
+    color: #1a1a1a;
+    max-width: 400px;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  /* 顶部栏 */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5e5e5;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+  }
+  .topbar .site-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .hamburger {
+    width: 24px;
+    height: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  .hamburger span {
+    display: block;
+    height: 2.5px;
+    background: #1a1a1a;
+    border-radius: 2px;
+  }
+
+  /* 内容 */
+  .content {
+    padding: 16px;
+  }
+
+  /* 描述 */
+  .desc {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+
+  /* 文章卡片 */
+  .card {
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+  }
+  .card-meta .pinned {
+    background: #f0f0f0;
+    color: #666;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+  .card-meta .cat {
+    color: #1a73e8;
+    font-weight: 500;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+  .card-excerpt {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-readmore {
+    font-size: 12px;
+    color: #1a73e8;
+    text-decoration: none;
+  }
+
+  /* 文章详情页 */
+  .article-header {
+    margin-bottom: 16px;
+  }
+  .article-title {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .article-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+  }
+  .article-body {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #333;
+  }
+  .article-body p {
+    margin-bottom: 12px;
+  }
+  .article-body img {
+    max-width: 100%;
+    border-radius: 6px;
+    margin: 12px 0;
+  }
+  .article-body hr {
+    border: none;
+    border-top: 1px dashed #ddd;
+    margin: 16px 0;
+  }
+
+  /* 底部作者 */
+  .author-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 0;
+    margin-top: 16px;
+    border-top: 1px solid #e5e5e5;
+  }
+  .author-box img {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .author-box .name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .author-box .bio {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+  }
+
+  /* 标签 */
+  .tag {
+    display: inline-block;
+    font-size: 12px;
+    color: #1a73e8;
+    background: #f0f4ff;
+    padding: 2px 10px;
+    border-radius: 12px;
+    margin-top: 12px;
+  }
+
+  /* 返回 */
+  .back {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* 回到顶部 */
+  .back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #666;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    cursor: pointer;
+  }
+
+  /* 标签页切换 */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e5e5;
+    background: #fff;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #666;
+    border-radius: 6px;
+  }
+  .tab.active {
+    background: #f0f0f0;
+    color: #1a1a1a;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== 手机界面 1：首页 ========== -->
+<div style="margin-bottom: 40px;">
+  <div style="background:#f5f5f5;padding:6px 12px;font-size:11px;color:#999;text-align:center;">首页</div>
+
+  <!-- 顶部栏 -->
+  <div class="topbar">
+    <div class="site-title">焦羽</div>
+    <div class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <!-- 内容 -->
+  <div class="content">
+    <div class="desc">焦羽</div>
+
+    <!-- 文章卡片 -->
+    <div class="card">
+      <div class="card-meta">
+        <span class="pinned">置顶</span>
+        <span class="cat">小说</span>
+        <span>2025年6月12日</span>
+      </div>
+      <div class="card-title">无暇赴死</div>
+      <div class="card-excerpt">2015年，一个陌生女人在律所门口拦住我，声称我手头一桩案子另有隐情。那案子证据确凿，一审判决死刑……</div>
+      <a class="card-readmore" href="#">阅读更多 →</a>
+    </div>
+
+    <!-- 第二篇卡片（占位） -->
+    <div class="card" style="opacity:0.5">
+      <div class="card-meta">
+        <span class="cat">AI</span>
+        <span>2026年6月12日</span>
+      </div>
+      <div class="card-title">文章标题</div>
+      <div class="card-excerpt">这里是文章摘要……</div>
+      <a class="card-readmore" href="#">阅读更多 →</a>
+    </div>
+
+    <!-- 回到顶部 -->
+    <div class="back-to-top">↑</div>
+  </div>
+</div>
+
+<!-- ========== 手机界面 2：文章详情页 ========== -->
+<div style="background:#f5f5f5;padding:6px 12px;font-size:11px;color:#999;text-align:center;">文章详情页</div>
+
+  <!-- 顶部栏 -->
+  <div class="topbar">
+    <div class="site-title">焦羽</div>
+    <div class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- 返回 -->
+    <div class="back">← 返回</div>
+
+    <!-- 文章标题区 -->
+    <div class="article-header">
+      <h1 class="article-title">无暇赴死</h1>
+      <div class="article-meta">
+        <span>发布于 2025年6月12日</span>
+        <span>|</span>
+        <span>阅读 3921</span>
+      </div>
+    </div>
+
+    <!-- 正文 -->
+    <div class="article-body">
+      <p>2015 年，一个陌生女人在律所门口拦住我，声称我手头一桩案子另有隐情。</p>
+      <p>那案子证据确凿，一审判决死刑，没有二审，目前到了死刑复核阶段，基本上已经尘埃落定了，她却在这个时间点突然出现。</p>
+      <p>我问，你是证人吗？</p>
+      <p>她说了一句让我终身难忘的话——</p>
+      <p>不，我是证物。</p>
+      <hr>
+      <p>2015 年冬天，我们律所接了一桩法律援助的案子，原本是交由我同事负责的。</p>
+      <p>那是一桩故意杀人案，2000 年立的案，当年技术条件落后，排查社会关系也毫无头绪，所以十几年来悬而未决，直至一个月前才有了关键线索，得以侦破。</p>
+    </div>
+
+    <!-- 标签 -->
+    <div class="tag">小说</div>
+
+    <!-- 回到顶部 -->
+    <div class="back-to-top">↑</div>
+
+    <!-- 作者简介 -->
+    <div class="author-box">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' fill='%23e5e5e5' rx='22'/%3E%3Ctext x='22' y='28' text-anchor='middle' fill='%23999' font-size='18'%3E焦%3C/text%3E%3C/svg%3E" alt="">
+      <div>
+        <div class="name">焦羽</div>
+        <div class="bio">皮条客</div>
+      </div>
+    </div>
+  </div>
+
+<div style="text-align:center;padding:20px;font-size:12px;color:#999;border-top:4px solid #f0f0f0;margin-top:20px;">
+  ↑ 以上是手机端的完整效果 ↑
+</div>
+
+</body>
+</html>

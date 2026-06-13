@@ -1,0 +1,61 @@
+---
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import config from "@/config";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+type Props = {
+  class?: string;
+  size?: "sm" | "lg";
+  pubDatetime: string | Date;
+  timezone?: string;
+  modDatetime?: string | Date | null;
+};
+
+const {
+  pubDatetime,
+  modDatetime,
+  size = "sm",
+  class: className = "",
+  timezone: postTimezone,
+} = Astro.props;
+
+const isModified = modDatetime && modDatetime > pubDatetime;
+
+const datetime = dayjs(isModified ? modDatetime : pubDatetime).tz(
+  postTimezone ?? config.site.timezone
+);
+
+const year = datetime.format("YYYY");
+const month = datetime.format("M");
+const day = datetime.format("D");
+const dateStr = `${year}年${month}月${day}日`;
+---
+
+<div
+  class:list={["text-muted-foreground flex items-center gap-x-2", className]}
+>
+  {
+    isModified && (
+      <span class:list={["text-sm", { "sm:text-base": size === "lg" }]}>
+        更新于
+      </span>
+    )
+  }
+  {
+    !isModified && (
+      <span class:list={["text-sm", { "sm:text-base": size === "lg" }]}>
+        发布于
+      </span>
+    )
+  }
+  <time
+    class:list={["text-sm", { "sm:text-base": size === "lg" }]}
+    datetime={datetime.toISOString()}
+  >
+    {dateStr}
+  </time>
+</div>
