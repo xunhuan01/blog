@@ -19,15 +19,8 @@ const t = useTranslations(locale);
 <!-- 顶部栏 -->
 <header class="border-border bg-background border-b">
   <div class="max-w-4xl mx-auto relative flex items-center justify-center py-3 px-4">
-    <a href="/" class="text-lg font-bold tracking-wide">
+    <a href="/" class="text-lg font-bold tracking-wide mx-auto">
       焦羽.blog
-    </a>
-    <a
-      href={getRelativeLocaleUrl(locale, "search")}
-      class="absolute right-4 top-1/2 -translate-y-1/2"
-      aria-label="搜索"
-    >
-      <svg class="size-5 stroke-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
     </a>
   </div>
 </header>
