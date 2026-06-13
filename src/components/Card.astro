@@ -20,7 +20,7 @@ const postUrl = getPostUrl(id, filePath, Astro.currentLocale);
     href={postUrl}
     class="block border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow max-w-[340px] mx-auto w-full"
   >
-    <!-- 置顶 + 分类 + 日期 -->
+    <!-- 置顶 + 分类 -->
     <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
       {
         featured && <span class="bg-accent/10 text-accent px-1 py-0.5 rounded text-[10px]">置顶</span>
@@ -30,13 +30,12 @@ const postUrl = getPostUrl(id, filePath, Astro.currentLocale);
           <span class="text-accent font-medium">{category}</span>
         )
       }
-      <Datetime {...props} />
     </div>
 
     <!-- 标题 -->
     <Heading
       transition:name={toTransitionName(title)}
-      class="text-sm font-bold mb-1 leading-snug"
+      class="text-lg font-extrabold mb-1 leading-snug"
     >
       {title}
     </Heading>
@@ -44,8 +43,13 @@ const postUrl = getPostUrl(id, filePath, Astro.currentLocale);
     <!-- 摘要 -->
     {
       description && (
-        <p class="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-1">{description}</p>
+        <p class="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-2">{description}</p>
       )
     }
+
+    <!-- 日期 → 左下角极小字体 -->
+    <div class="text-[3px] text-muted-foreground">
+      <Datetime {...props} />
+    </div>
   </a>
 </li>

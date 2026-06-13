@@ -32,7 +32,7 @@ const datetime = dayjs(isModified ? modDatetime : pubDatetime).tz(
 const year = datetime.format("YYYY");
 const month = datetime.format("M");
 const day = datetime.format("D");
-const dateStr = `${year}年${month}月${day}日`;
+const dateStr = `${year}-${month}-${day}`;
 ---
 
 <div
