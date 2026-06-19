@@ -1,43 +1,123 @@
 ---
-import { getCollection } from "astro:content";
+import { getCollection, getEntry, render } from "astro:content";
 import { getRelativeLocaleUrl } from "astro:i18n";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Card from "@/components/Card.astro";
+import Datetime from "@/components/Datetime.astro";
+import { getPostUrl } from "@/utils/getPostPaths";
 import { getSortedPosts } from "@/utils/getSortedPosts";
+import { getUniqueTags } from "@/utils/getUniqueTags";
 import { useTranslations } from "@/i18n";
 import config from "@/config";
 
 const { posts: postsConfig } = config;
-
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
 
+// 首页文章
 const posts = await getCollection("posts");
 const sortedPosts = getSortedPosts(posts);
-// 置顶文章排前面，其余按时间
 const pinned = sortedPosts.filter(p => p.data.featured);
 const rest = sortedPosts.filter(p => !p.data.featured);
 const displayPosts = [...pinned, ...rest];
 const homePath = getRelativeLocaleUrl(locale, "");
+
+// 分类标签文章
+const allPosts = await getCollection("posts", ({ data }) => !data.draft);
+const sortedAllPosts = getSortedPosts(allPosts);
+const tags = getUniqueTags(allPosts);
+
+// 作者页内容
+const about = await getEntry("pages", "about");
+const { Content: AboutContent } = about ? await render(about) : { Content: null };
 ---
 
 <Layout>
   <Header />
-  <main
-    id="main-content"
-    data-layout="index"
-    data-home-path={homePath}
-    class="app-layout"
-  >
-    <section class="pt-6 pb-6">
+  <main id="main-content" class="app-layout">
+    <!-- 首页面板 -->
+    <section id="home-panel" class="pt-6 pb-6" style="display:block">
       <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {displayPosts.slice(0, postsConfig.perIndex).map(data => (
           <Card variant="h3" {...data} />
         ))}
       </ul>
     </section>
+
+    <!-- 分类面板 -->
+    <section id="tags-panel" class="pt-6 pb-6" style="display:none">
+      <div class="flex gap-8 mt-2">
+        <div class="w-28 sm:w-36 shrink-0">
+          <ul class="flex flex-col gap-1" id="tag-list">
+            <li>
+              <button data-tag="all" class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors font-medium bg-accent/10 text-accent">全部</button>
+            </li>
+            {tags.map(({ tag, tagName }) => (
+              <li>
+                <button data-tag={tagName} class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">#{tagName}</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="flex-1 min-w-0" id="article-list">
+          <p class="text-xs text-muted-foreground mb-3" id="result-count">全部文章（{sortedAllPosts.length}篇）</p>
+          <ul class="flex flex-col gap-3">
+            {sortedAllPosts.map(({ id, data, filePath }) => {
+              const { title, tags: postTags, ...rest } = data;
+              const postUrl = getPostUrl(id, filePath, locale);
+              return (
+                <li class="article-item" data-tags={(postTags || []).join(",")}>
+                  <a href={postUrl} class="block border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="text-sm font-bold mb-0.5">{title}</h3>
+                    <p class="text-xs text-muted-foreground line-clamp-1">{data.description}</p>
+                    <div class="text-[3px] text-muted-foreground mt-1"><Datetime {...rest} /></div>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 作者面板 -->
+    <section id="about-panel" class="pt-6 pb-6" style="display:none">
+      {AboutContent && <AboutContent />}
+    </section>
   </main>
   <Footer />
 </Layout>
+
+<script>
+  function initApp() {
+    // 标签筛选逻辑
+    const tagBtns = document.querySelectorAll(".tag-btn");
+    const articles = document.querySelectorAll(".article-item");
+    const resultCount = document.getElementById("result-count");
+    if (tagBtns.length && articles.length && resultCount) {
+      tagBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          tagBtns.forEach(b => b.classList.remove("bg-accent/10", "text-accent", "font-medium"));
+          btn.classList.add("bg-accent/10", "text-accent", "font-medium");
+          const tag = btn.dataset.tag;
+          let count = 0;
+          articles.forEach(article => {
+            const articleTags = article.dataset.tags;
+            if (tag === "all" || articleTags.includes(tag)) {
+              article.style.display = "block";
+              count++;
+            } else {
+              article.style.display = "none";
+            }
+          });
+          resultCount.textContent = tag === "all" ? `全部文章（${count}篇）` : `#${btn.textContent.trim()}（${count}篇）`;
+        });
+      });
+      document.querySelector('[data-tag="all"]')?.click();
+    }
+  }
+  initApp();
+  document.addEventListener("astro:page-load", initApp);
+</script>

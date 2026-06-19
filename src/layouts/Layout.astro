@@ -160,5 +160,32 @@ const rssHref = getRelativeLocaleUrl(
     <script>
       import "@/scripts/theme";
     </script>
+    <script>
+      function initSPA() {
+        const isHome = window.location.pathname === "/" || window.location.pathname === "/index.html";
+        document.querySelectorAll("nav.sm\\:hidden a[href='/'], nav.sm\\:hidden a[href='/tags/'], nav.sm\\:hidden a[href='/about/']").forEach(link => {
+          link.addEventListener("click", e => {
+            if (!isHome) return;
+            e.preventDefault();
+            const href = link.getAttribute("href");
+            ["home-panel","tags-panel","about-panel"].forEach(id => {
+              const el = document.getElementById(id);
+              if (el) el.style.display = "none";
+            });
+            const panelId = href === "/" ? "home-panel" : href === "/tags/" ? "tags-panel" : "about-panel";
+            const panel = document.getElementById(panelId);
+            if (panel) {
+              panel.style.display = "block";
+              // 重新激活标签筛选
+              if (panelId === "tags-panel") {
+                setTimeout(() => document.querySelector('[data-tag="all"]')?.click(), 0);
+              }
+            }
+          });
+        });
+      }
+      initSPA();
+      document.addEventListener("astro:page-load", initSPA);
+    </script>
   </body>
 </html>
