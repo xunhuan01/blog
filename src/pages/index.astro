@@ -37,29 +37,11 @@ const { Content: AboutContent } = about ? await render(about) : { Content: null 
 <Layout>
   <Header />
   <main id="main-content" class="app-layout">
-    <!-- 首页面板 -->
-    <section id="home-panel" class="pt-6 pb-6" style="display:block">
-      <div style="position:relative;max-width:340px;margin:0 auto 16px">
-        <a href="/通往性自由之路" style="display:block;padding:14px 20px;background:linear-gradient(135deg,#d4a017,#c5940e);color:#fff;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(196,148,16,0.4)">
-          🔗 通往性自由之路
-        </a>
-        <span style="position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;line-height:1.2">置顶</span>
-      </div>
-      <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {displayPosts.slice(0, postsConfig.perIndex).map(data => (
-          <Card variant="h3" {...data} />
-        ))}
-      </ul>
-    </section>
-
     <!-- 分类面板 -->
-    <section id="tags-panel" class="pt-6 pb-6" style="display:none">
+    <section id="tags-panel" class="pt-6 pb-6" style="display:block">
       <div class="flex gap-8 mt-2">
         <div class="w-28 sm:w-36 shrink-0">
           <ul class="flex flex-col gap-1" id="tag-list">
-            <li>
-              <button data-tag="all" class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors font-medium bg-accent/10 text-accent">全部</button>
-            </li>
             {tags.map(({ tag, tagName }) => (
               <li>
                 <button data-tag={tagName} class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">#{tagName}</button>
@@ -69,6 +51,12 @@ const { Content: AboutContent } = about ? await render(about) : { Content: null 
         </div>
         <div class="flex-1 min-w-0" id="article-list">
           <p class="text-xs text-muted-foreground mb-3" id="result-count">全部文章（{sortedAllPosts.length}篇）</p>
+          <div style="position:relative;max-width:340px;margin:0 auto 16px;display:none" id="golden-btn">
+            <a href="/通往性自由之路" style="display:block;padding:14px 20px;background:linear-gradient(135deg,#d4a017,#c5940e);color:#fff;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(196,148,16,0.4)">
+              🔗 通往性自由之路
+            </a>
+            <span style="position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;line-height:1.2">置顶</span>
+          </div>
           <ul class="flex flex-col gap-3">
             {sortedAllPosts.map(({ id, data, filePath }) => {
               const { title, tags: postTags, ...rest } = data;
@@ -86,6 +74,15 @@ const { Content: AboutContent } = about ? await render(about) : { Content: null 
           </ul>
         </div>
       </div>
+    </section>
+
+    <!-- 首页面板 -->
+    <section id="home-panel" class="pt-6 pb-6" style="display:none">
+      <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {displayPosts.slice(0, postsConfig.perIndex).map(data => (
+          <Card variant="h3" {...data} />
+        ))}
+      </ul>
     </section>
 
     <!-- 作者面板 -->
@@ -119,9 +116,14 @@ const { Content: AboutContent } = about ? await render(about) : { Content: null 
             }
           });
           resultCount.textContent = tag === "all" ? `全部文章（${count}篇）` : `#${btn.textContent.trim()}（${count}篇）`;
+          // 金色按钮只在选中"皮条往事"时显示
+          const goldenBtn = document.getElementById("golden-btn");
+          if (goldenBtn) {
+            goldenBtn.style.display = (tag === "皮条往事") ? "block" : "none";
+          }
         });
       });
-      document.querySelector('[data-tag="all"]')?.click();
+      document.querySelector('[data-tag="皮条往事"]')?.click();
     }
   }
   initApp();

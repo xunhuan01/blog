@@ -118,13 +118,13 @@ const rssHref = getRelativeLocaleUrl(
     <!-- 侧边栏（电脑端） -->
     <aside class="hidden sm:flex sm:flex-col sm:w-44 sm:items-center sm:border-r sm:border-border sm:min-h-svh sm:py-6 sm:fixed sm:left-0 sm:top-0 sm:bg-background sm:z-40 sm:pt-20">
       <nav class="flex flex-col items-center gap-6 mt-4 w-full">
-        <a href="/" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
-          <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-          <span class="text-sm font-medium">文章</span>
-        </a>
         <a href="/tags/" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
           <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           <span class="text-sm font-medium">分类</span>
+        </a>
+        <a href="/" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
+          <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span class="text-sm font-medium">往期</span>
         </a>
         <a href="/about/" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
           <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -138,13 +138,13 @@ const rssHref = getRelativeLocaleUrl(
     <!-- 手机端底部导航 -->
     <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
       <div class="flex justify-around items-center py-2">
-        <a href="/" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
-          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-          <span>文章</span>
-        </a>
         <a href="/tags/" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           <span>分类</span>
+        </a>
+        <a href="/" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
+          <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span>往期</span>
         </a>
         <a href="/about/" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
