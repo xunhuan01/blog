@@ -15,6 +15,13 @@ description: "焦羽的个人简介"
   tg：fuck001
   </div>
 
+<div style="text-align:center;margin-top:16px">
+  <a href="https://chat.waiwei.top/" target="_blank"
+     style="display:inline-block;padding:10px 28px;border:2px solid #2563eb;color:#2563eb;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">
+    💬 立即私聊
+  </a>
+</div>
+
   </div>
 
 </div>
