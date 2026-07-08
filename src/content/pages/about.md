@@ -9,8 +9,8 @@ description: "焦羽的个人简介"
   <h2 style="font-size:18px;font-weight:700;margin:0 0 4px">焦羽</h2>
 
   <div style="background:#f5f5f5;border-radius:8px;padding:16px 20px;max-width:400px;margin:12px auto 0;font-size:13px;color:#666;line-height:1.8;text-align:left">
-  当过五年皮条客<br>
-  立志要让500个男同胞实现性自由<br>
+  皮条客/民族主义/短篇作家/社会观察<br>
+  当过五年外围经纪人，立志让500个男同胞实现性自由<br><br>
   微信：xunhuan360<br>
   tg：fuck001
   </div>

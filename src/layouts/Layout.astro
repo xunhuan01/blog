@@ -163,7 +163,7 @@ const rssHref = getRelativeLocaleUrl(
     <script>
       function initSPA() {
         const isHome = window.location.pathname === "/" || window.location.pathname === "/index.html";
-        document.querySelectorAll("nav.sm\\:hidden a[href='/'], nav.sm\\:hidden a[href='/tags/'], nav.sm\\:hidden a[href='/about/']").forEach(link => {
+        document.querySelectorAll("aside a[href='/'], aside a[href='/tags/'], aside a[href='/about/'], nav.sm\\:hidden a[href='/'], nav.sm\\:hidden a[href='/tags/'], nav.sm\\:hidden a[href='/about/']").forEach(link => {
           link.addEventListener("click", e => {
             if (!isHome) return;
             e.preventDefault();

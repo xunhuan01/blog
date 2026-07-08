@@ -76,12 +76,23 @@ const { Content: AboutContent } = about ? await render(about) : { Content: null 
       </div>
     </section>
 
-    <!-- 首页面板 -->
+    <!-- 往期面板（全部文章） -->
     <section id="home-panel" class="pt-6 pb-6" style="display:none">
-      <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {displayPosts.slice(0, postsConfig.perIndex).map(data => (
-          <Card variant="h3" {...data} />
-        ))}
+      <p class="text-xs text-muted-foreground mb-3">全部文章（{displayPosts.length}篇）</p>
+      <ul class="flex flex-col gap-3">
+        {displayPosts.map(({ id, data, filePath }) => {
+          const { title, description } = data;
+          const postUrl = getPostUrl(id, filePath, locale);
+          return (
+            <li>
+              <a href={postUrl} class="block border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                <h3 class="text-sm font-bold mb-0.5">{title}</h3>
+                <p class="text-xs text-muted-foreground line-clamp-1">{description}</p>
+                <div class="text-[3px] text-muted-foreground mt-1"><Datetime {...data} /></div>
+              </a>
+            </li>
+          );
+        })}
       </ul>
     </section>
 
