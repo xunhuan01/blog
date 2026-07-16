@@ -137,21 +137,43 @@ const ogImage = ogImageUrl
       <span class="text-muted-foreground text-xs">阅读 {readCount}</span>
     </div>
 
-    <!-- 密码保护遮罩 -->
+    <!-- 密码保护遮罩（精致简约版） -->
     {hasPassword && (
-      <div id="password-overlay" data-password={password} class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div class="bg-card border border-border rounded-lg shadow-lg p-6 sm:p-8 max-w-sm w-full mx-4">
-          <p class="text-lg font-semibold text-foreground mb-3">🔒 此文章需要密码</p>
-          <input
-            id="password-input"
-            type="password"
-            placeholder="请输入密码"
-            class="w-full rounded border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground mb-3"
-          />
-          <button id="password-submit" class="w-full rounded bg-accent text-white px-3 py-2 text-sm font-medium hover:opacity-90 mb-2">
-            确认
+      <div id="password-overlay" data-password={password} class="fixed inset-0 z-50 flex items-center justify-center bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md transition-all duration-300">
+        <div class="w-full max-w-[320px] mx-6 text-center animate-in fade-in zoom-in-95 duration-300">
+          <!-- 锁图标 -->
+          <div class="mb-6 flex justify-center">
+            <div class="w-16 h-16 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+              <svg class="w-7 h-7 text-neutral-500 dark:text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- 标题 -->
+          <p class="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">此文章需要密码</p>
+          <p class="text-xs text-neutral-400 dark:text-neutral-500 mb-6">请输入密码后继续阅读</p>
+
+          <!-- 输入框 -->
+          <div class="relative mb-4">
+            <input
+              id="password-input"
+              type="password"
+              placeholder="输入密码"
+              class="w-full h-11 px-4 text-sm text-neutral-800 dark:text-neutral-200 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl outline-none transition-all duration-200 placeholder:text-neutral-400 focus:border-neutral-400 dark:focus:border-neutral-500 focus:ring-0"
+            />
+          </div>
+
+          <!-- 确认按钮 -->
+          <button
+            id="password-submit"
+            class="w-full h-11 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-sm font-medium tracking-wide hover:bg-neutral-800 dark:hover:bg-neutral-200 active:scale-[0.98] transition-all duration-150"
+          >
+            确认密码
           </button>
-          <p id="password-error" class="text-red-500 text-xs hidden">密码错误，请重试</p>
+
+          <!-- 错误提示 -->
+          <p id="password-error" class="mt-3 text-xs text-red-500 dark:text-red-400 hidden">密码错误，请重试</p>
         </div>
       </div>
     )}
