@@ -20,6 +20,7 @@ const posts = defineCollection({
       description: z.string(),
       canonicalURL: z.string().optional(),
       hideEditPost: z.boolean().optional(),
+      password: z.string().optional(),
       timezone: z.string().optional(),
     }),
 });

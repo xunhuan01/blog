@@ -68,7 +68,10 @@ const {
   timezone,
   tags,
   hideEditPost,
+  password,
 } = post.data;
+
+const hasPassword = typeof password === "string" && password.length > 0;
 
 const { Content } = await render(post);
 
@@ -134,12 +137,32 @@ const ogImage = ogImageUrl
       <span class="text-muted-foreground text-xs">阅读 {readCount}</span>
     </div>
 
+    <!-- 密码保护遮罩 -->
+    {hasPassword && (
+      <div id="password-overlay" data-password={password} class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="bg-card border border-border rounded-lg shadow-lg p-6 sm:p-8 max-w-sm w-full mx-4">
+          <p class="text-lg font-semibold text-foreground mb-3">🔒 此文章需要密码</p>
+          <input
+            id="password-input"
+            type="password"
+            placeholder="请输入密码"
+            class="w-full rounded border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground mb-3"
+          />
+          <button id="password-submit" class="w-full rounded bg-accent text-white px-3 py-2 text-sm font-medium hover:opacity-90 mb-2">
+            确认
+          </button>
+          <p id="password-error" class="text-red-500 text-xs hidden">密码错误，请重试</p>
+        </div>
+      </div>
+    )}
+
     <article
       id="article"
       class:list={[
         "mt-8 w-full",
         "app-prose max-w-app",
         "prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg)",
+        hasPassword && "hidden",
       ]}
     >
       <Content />
@@ -166,6 +189,46 @@ const ogImage = ogImageUrl
 </PostLayout>
 
 <script is:inline data-astro-rerun>
+  // 🔒 密码保护逻辑
+  (function() {
+    const overlay = document.getElementById("password-overlay");
+    const article = document.getElementById("article");
+    if (!overlay || !article) return;
+
+    const correctPassword = overlay.dataset.password || "";
+    if (!correctPassword) return;
+
+    // 检查 sessionStorage 是否已解锁
+    const storageKey = "article_unlocked_" + window.location.pathname;
+    if (sessionStorage.getItem(storageKey) === "1") {
+      overlay.style.display = "none";
+      article.classList.remove("hidden");
+      return;
+    }
+
+    const input = document.getElementById("password-input");
+    const submitBtn = document.getElementById("password-submit");
+    const errorEl = document.getElementById("password-error");
+
+    function tryUnlock() {
+      if (input.value === correctPassword) {
+        sessionStorage.setItem(storageKey, "1");
+        overlay.style.display = "none";
+        article.classList.remove("hidden");
+        errorEl.classList.add("hidden");
+      } else {
+        errorEl.classList.remove("hidden");
+        input.focus();
+      }
+    }
+
+    submitBtn.addEventListener("click", tryUnlock);
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") tryUnlock();
+    });
+    input.focus();
+  })();
+
   function createProgressBar() {
     const progressContainer = document.createElement("div");
     progressContainer.className =

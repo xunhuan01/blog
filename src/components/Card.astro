@@ -10,7 +10,7 @@ type Props = {
 
 const { variant: Heading = "h2", id, data, filePath } = Astro.props;
 
-const { title, description, tags, featured, ...props } = data;
+const { title, description, tags, featured, password, ...props } = data;
 const category = tags?.[0] || "";
 const postUrl = getPostUrl(id, filePath, Astro.currentLocale);
 ---
@@ -23,13 +23,16 @@ const postUrl = getPostUrl(id, filePath, Astro.currentLocale);
     <!-- 置顶 + 分类 -->
     <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
       {
-        featured && <span class="bg-accent/10 text-accent px-1 py-0.5 rounded text-[10px]">置顶</span>
-      }
-      {
-        category && (
-          <span class="text-accent font-medium">{category}</span>
-        )
-      }
+            featured && <span class="bg-accent/10 text-accent px-1 py-0.5 rounded text-[10px]">置顶</span>
+          }
+          {
+            password && <span class="text-muted-foreground/60 text-[10px]">🔒 加密</span>
+          }
+          {
+            category && (
+              <span class="text-accent font-medium">{category}</span>
+            )
+          }
     </div>
 
     <!-- 标题 -->
