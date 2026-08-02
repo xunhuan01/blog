@@ -1,11 +1,12 @@
 ---
-import { getCollection, getEntry, render } from "astro:content";
+import { getCollection, render } from "astro:content";
 import { getRelativeLocaleUrl } from "astro:i18n";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Card from "@/components/Card.astro";
 import Datetime from "@/components/Datetime.astro";
+import ChatHall from "@/components/ChatHall.astro";
 import { getPostUrl } from "@/utils/getPostPaths";
 import { getSortedPosts } from "@/utils/getSortedPosts";
 import { getUniqueTags } from "@/utils/getUniqueTags";
@@ -28,10 +29,6 @@ const homePath = getRelativeLocaleUrl(locale, "");
 const allPosts = await getCollection("posts", ({ data }) => !data.draft);
 const sortedAllPosts = getSortedPosts(allPosts);
 const tags = getUniqueTags(allPosts);
-
-// 作者页内容
-const about = await getEntry("pages", "about");
-const { Content: AboutContent } = about ? await render(about) : { Content: null };
 ---
 
 <Layout>
@@ -47,10 +44,13 @@ const { Content: AboutContent } = about ? await render(about) : { Content: null 
                 <button data-tag={tagName} class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">#{tagName}</button>
               </li>
             ))}
+            <li>
+              <button data-tag="往期" class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">📚 往期</button>
+            </li>
           </ul>
         </div>
         <div class="flex-1 min-w-0" id="article-list">
-          <p class="text-xs text-muted-foreground mb-3" id="result-count">全部文章（{sortedAllPosts.length}篇）</p>
+          <p class="text-xs text-muted-foreground mb-3" id="result-count">全部文章（{sortedAllPosts.filter(p => !(p.data.tags || []).includes("小说")).length}篇）</p>
           <div style="position:relative;max-width:340px;margin:0 auto 16px;display:none" id="golden-btn">
             <a href="/通往性自由之路" style="display:block;padding:14px 20px;background:linear-gradient(135deg,#d4a017,#c5940e);color:#fff;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(196,148,16,0.4)">
               🔗 通往性自由之路
@@ -76,29 +76,9 @@ const { Content: AboutContent } = about ? await render(about) : { Content: null 
       </div>
     </section>
 
-    <!-- 往期面板（全部文章） -->
-    <section id="home-panel" class="pt-6 pb-6" style="display:none">
-      <p class="text-xs text-muted-foreground mb-3">全部文章（{displayPosts.length}篇）</p>
-      <ul class="flex flex-col gap-3">
-        {displayPosts.map(({ id, data, filePath }) => {
-          const { title, description } = data;
-          const postUrl = getPostUrl(id, filePath, locale);
-          return (
-            <li>
-              <a href={postUrl} class="block border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
-                <h3 class="text-sm font-bold mb-0.5">{title}</h3>
-                <p class="text-xs text-muted-foreground line-clamp-1">{description}</p>
-                <div class="text-[3px] text-muted-foreground mt-1"><Datetime {...data} /></div>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-
-    <!-- 作者面板 -->
-    <section id="about-panel" class="pt-6 pb-6" style="display:none">
-      {AboutContent && <AboutContent />}
+    <!-- 聊天面板（大厅） -->
+    <section id="chat-panel" class="pt-6 pb-6" style="display:none">
+      <ChatHall />
     </section>
   </main>
   <Footer />
@@ -113,20 +93,27 @@ const { Content: AboutContent } = about ? await render(about) : { Content: null 
     if (tagBtns.length && articles.length && resultCount) {
       tagBtns.forEach(btn => {
         btn.addEventListener("click", () => {
-          tagBtns.forEach(b => b.classList.remove("bg-accent/10", "text-accent", "font-medium"));
-          btn.classList.add("bg-accent/10", "text-accent", "font-medium");
+          tagBtns.forEach(b => {
+            b.classList.remove("bg-accent/10", "text-accent", "font-medium");
+          });
           const tag = btn.dataset.tag;
+          btn.classList.add("bg-accent/10", "text-accent", "font-medium");
           let count = 0;
           articles.forEach(article => {
             const articleTags = article.dataset.tags;
-            if (tag === "all" || articleTags.includes(tag)) {
+            if (tag === "往期") {
+              // 往期 = 全部文章，但隐藏小说（小说只能在小说标签里看）
+              const isNovel = articleTags.includes("小说");
+              article.style.display = isNovel ? "none" : "block";
+              if (!isNovel) count++;
+            } else if (articleTags.includes(tag)) {
               article.style.display = "block";
               count++;
             } else {
               article.style.display = "none";
             }
           });
-          resultCount.textContent = tag === "all" ? `全部文章（${count}篇）` : `#${btn.textContent.trim()}（${count}篇）`;
+          resultCount.textContent = tag === "往期" ? `全部文章（${count}篇）` : `#${btn.textContent.trim()}（${count}篇）`;
           // 金色按钮只在选中"皮条往事"时显示
           const goldenBtn = document.getElementById("golden-btn");
           if (goldenBtn) {
