@@ -64,12 +64,16 @@ const sortedTags = [
           </div>
           <ul class="flex flex-col gap-3">
             {sortedAllPosts.map(({ id, data, filePath }) => {
-              const { title, tags: postTags, ...rest } = data;
+              const { title, tags: postTags, password, ...rest } = data;
               const postUrl = getPostUrl(id, filePath, locale);
+              const isLocked = typeof password === "string" && password.length > 0;
               return (
                 <li class="article-item" data-tags={(postTags || []).join(",")}>
                   <a href={postUrl} class="block border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
-                    <h3 class="text-sm font-bold mb-0.5">{title}</h3>
+                    <div class="flex items-center gap-2 mb-0.5">
+                      <h3 class="text-sm font-bold">{title}</h3>
+                      {isLocked && <span style="font-size:10px;color:#fff;background:#fa5151;border-radius:4px;padding:1px 5px;flex-shrink:0;line-height:1.4">会员</span>}
+                    </div>
                     <p class="text-xs text-muted-foreground line-clamp-1">{data.description}</p>
                     <div class="text-[3px] text-muted-foreground mt-1"><Datetime {...rest} /></div>
                   </a>
