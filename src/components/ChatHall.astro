@@ -56,4 +56,51 @@
 
   </div>
 
+  <!-- 下载到桌面（PWA 安装按钮） -->
+  <button id="install-btn" style="display:none;width:100%;margin-top:16px;padding:12px;border:none;border-radius:10px;background:#07c160;color:#fff;font-size:15px;font-weight:600;cursor:pointer">📲 下载到桌面</button>
+
 </div>
+
+<script>
+  // PWA 安装按钮逻辑
+  (function () {
+    const btn = document.getElementById("install-btn");
+    if (!btn) return;
+
+    // 已安装（独立窗口模式）→ 不显示按钮
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
+
+    // iOS Safari：不支持系统安装框，改为提示"添加到主屏幕"
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    let deferredPrompt = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btn.style.display = "block";
+    });
+
+    btn.addEventListener("click", async () => {
+      if (isIOS) {
+        alert("请点击浏览器底部的「分享」按钮，然后选择「添加到主屏幕」，即可把焦羽放到桌面");
+        return;
+      }
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const choice = await deferredPrompt.userChoice.catch(() => ({}));
+      if (choice && choice.outcome === "accepted") {
+        btn.style.display = "none";
+      }
+      deferredPrompt = null;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      btn.style.display = "none";
+    });
+
+    // iOS：直接显示提示按钮
+    if (isIOS) {
+      btn.style.display = "block";
+    }
+  })();
+</script>

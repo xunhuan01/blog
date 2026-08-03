@@ -44,6 +44,15 @@ const rssHref = getRelativeLocaleUrl(
     <link rel="canonical" href={canonicalURL} />
     <meta name="generator" content={Astro.generator} />
 
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="焦羽" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
     <!-- Font removed - using system font -->
 
     <!-- Primary meta -->
@@ -159,6 +168,14 @@ const rssHref = getRelativeLocaleUrl(
     </div>
     <script>
       import "@/scripts/theme";
+    </script>
+    <script>
+      // PWA Service Worker 注册
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        });
+      }
     </script>
     <script>
       function initSPA() {
