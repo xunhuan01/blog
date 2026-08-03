@@ -126,7 +126,11 @@ const sortedTags = [
           }
         });
       });
-      document.querySelector('[data-tag="皮条往事"]')?.click();
+      // 默认选中皮条往事；若 URL 带 ?tag= 参数（从旧 /tags/[tag] 重定向来），选中对应标签
+      const urlTag = new URLSearchParams(window.location.search).get("tag");
+      const targetBtn = urlTag ? document.querySelector(`[data-tag="${urlTag}"]`) : document.querySelector('[data-tag="皮条往事"]');
+      if (targetBtn) targetBtn.click();
+      else document.querySelector('[data-tag="皮条往事"]')?.click();
     }
   }
   initApp();
