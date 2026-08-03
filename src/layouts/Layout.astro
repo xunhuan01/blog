@@ -176,6 +176,9 @@ const rssHref = getRelativeLocaleUrl(
             const panel = document.getElementById(panelId);
             if (panel) {
               panel.style.display = "block";
+              // 聊天面板隐藏顶部"焦羽.blog"标识，文章面板恢复
+              const headerEl = document.querySelector("header");
+              if (headerEl) headerEl.style.display = panelId === "chat-panel" ? "none" : "block";
               // 重新激活标签筛选
               if (panelId === "tags-panel") {
                 setTimeout(() => document.querySelector('[data-tag="皮条往事"]')?.click(), 0);
