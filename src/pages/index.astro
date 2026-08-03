@@ -29,6 +29,11 @@ const homePath = getRelativeLocaleUrl(locale, "");
 const allPosts = await getCollection("posts", ({ data }) => !data.draft);
 const sortedAllPosts = getSortedPosts(allPosts);
 const tags = getUniqueTags(allPosts);
+// 皮条往事置顶，其余标签保持原顺序
+const sortedTags = [
+  ...tags.filter(t => t.tagName === "皮条往事"),
+  ...tags.filter(t => t.tagName !== "皮条往事"),
+];
 ---
 
 <Layout>
@@ -39,7 +44,7 @@ const tags = getUniqueTags(allPosts);
       <div class="flex gap-8 mt-2">
         <div class="w-28 sm:w-36 shrink-0">
           <ul class="flex flex-col gap-1" id="tag-list">
-            {tags.map(({ tag, tagName }) => (
+            {sortedTags.map(({ tag, tagName }) => (
               <li>
                 <button data-tag={tagName} class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">#{tagName}</button>
               </li>
