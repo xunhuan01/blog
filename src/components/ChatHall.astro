@@ -56,8 +56,8 @@
 
   </div>
 
-  <!-- 安装到桌面（PWA，简约设计，仅可安装时显示） -->
-  <div id="install-wrap" style="display:none;flex-direction:column;align-items:center;gap:10px;margin:42vh auto 0">
+  <!-- 安装到桌面（PWA，简约设计） -->
+  <div id="install-wrap" style="display:flex;flex-direction:column;align-items:center;gap:10px;margin:17vh auto 0">
     <button id="install-btn" title="安装到桌面" style="width:54px;height:54px;border:none;border-radius:50%;background:linear-gradient(135deg,#07c160,#06ad56);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(7,193,96,0.28);transition:transform 0.15s">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     </button>
@@ -73,17 +73,20 @@
     const btn = document.getElementById("install-btn");
     if (!wrap || !btn) return;
 
-    // 已安装（独立窗口模式）→ 不显示按钮
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
+    // 已安装（独立窗口模式）→ 隐藏按钮
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      wrap.style.display = "none";
+      return;
+    }
 
-    // iOS Safari：不支持系统安装框，改为提示"添加到主屏幕"
+    // iOS Safari：不支持系统安装框，点击时提示"添加到主屏幕"
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
+    // 浏览器可安装信号（Chrome/Edge 可能不发，有就用，没有也能引导）
     let deferredPrompt = null;
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      wrap.style.display = "flex";
     });
 
     btn.addEventListener("click", async () => {
@@ -91,22 +94,22 @@
         alert("请点击浏览器底部的「分享」按钮，然后选择「添加到主屏幕」，即可把焦羽放到桌面");
         return;
       }
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice.catch(() => ({}));
-      if (choice && choice.outcome === "accepted") {
-        wrap.style.display = "none";
+      if (deferredPrompt) {
+        // 有安装资格：弹系统安装框
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice.catch(() => ({}));
+        if (choice && choice.outcome === "accepted") {
+          wrap.style.display = "none";
+        }
+        deferredPrompt = null;
+        return;
       }
-      deferredPrompt = null;
+      // 无安装资格（浏览器没发信号）：引导手动安装
+      alert("请在浏览器右上角「⋮」菜单中选择「安装应用」/「添加到主屏幕」，即可把焦羽放到桌面");
     });
 
     window.addEventListener("appinstalled", () => {
       wrap.style.display = "none";
     });
-
-    // iOS：直接显示提示按钮
-    if (isIOS) {
-      wrap.style.display = "flex";
-    }
   })();
 </script>
