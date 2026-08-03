@@ -11,12 +11,12 @@ const tiers = [
     icon: "🖤",
     iconHtml: '<svg viewBox="0 0 24 24" width="26" height="26"><rect x="10.6" y="3.5" width="2.8" height="3" rx="1.4" fill="#333"/><circle cx="12" cy="14.5" r="7.5" fill="#333"/><circle cx="12" cy="14.5" r="5.4" fill="none" stroke="#555" stroke-width="1"/><path d="M12 11.2l.85 1.72 1.9.28-1.38 1.34.33 1.9-1.7-.9-1.7.9.33-1.9-1.38-1.34 1.9-.28z" fill="#fff"/></svg>',
     name: "青铜会员",
-    price: "基础档",
-    desc: "入门体验，先交个朋友",
+    level: "基础档",
+    price: "¥199",
     benefits: [
-      "加入会员群，和群友畅聊",
-      "帖子墙全部内容可浏览",
-      "TG 专属通知，新帖提醒",
+      "解锁帖子墙",
+      "解锁会员群",
+      "解锁付费文章",
     ],
     btnText: "开通青铜会员",
     highlight: false,
@@ -26,13 +26,11 @@ const tiers = [
     icon: "🥇",
     iconHtml: '<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="11" fill="#d4a017"/><text x="12" y="16" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">金</text></svg>',
     name: "黄金会员",
-    price: "进阶档",
-    desc: "深度交流，私聊直达",
+    level: "进阶档",
+    price: "¥499",
     benefits: [
       "含青铜会员全部权益",
-      "私聊管理优先通道，直接和焦羽聊",
-      "会员群发言高亮，被看见",
-      "每月专属问答一次",
+      "会费可抵后续安排的消费",
     ],
     btnText: "开通黄金会员",
     highlight: false,
@@ -42,13 +40,11 @@ const tiers = [
     icon: "💎",
     iconHtml: "",
     name: "钻石会员",
-    price: "顶配档",
-    desc: "一对一深度服务",
+    level: "顶配档",
+    price: "¥6999",
     benefits: [
       "含黄金会员全部权益",
-      "一对一深度私聊，随时在线",
-      "专属内容优先看",
-      "个性化指导，量身定制",
+      "解锁《通往性自由之路》",
     ],
     btnText: "开通钻石会员",
     highlight: false,
@@ -64,18 +60,20 @@ const tiers = [
     <div style="max-width:420px;margin:0 auto;padding-top:24px">
 
       <div style="text-align:center;padding:0 0 20px">
-        <h2 style="font-size:20px;font-weight:700;margin:0 0 6px">👑 会员购买</h2>
-        <p style="font-size:13px;color:#999;margin:0">三档会员，按需选择</p>
+        <h2 style="font-size:20px;font-weight:700;margin:0">👑 会员购买</h2>
       </div>
 
       {tiers.map(tier => (
         <div style={`background:#fff;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,0.06);border:1px solid #eee;`}>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-            <span style="font-size:26px;line-height:1;display:flex">{tier.iconHtml ? <span set:html={tier.iconHtml} /> : tier.icon}</span>
-            <div>
-              <div style="font-size:17px;font-weight:700;color:#333">{tier.name}</div>
-              <div style="font-size:12px;color:#999">{tier.price} · {tier.desc}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:26px;line-height:1;display:flex">{tier.iconHtml ? <span set:html={tier.iconHtml} /> : tier.icon}</span>
+              <div>
+                <div style="font-size:17px;font-weight:700;color:#333">{tier.name}</div>
+                <div style="font-size:12px;color:#999">{tier.level}</div>
+              </div>
             </div>
+            <div style="font-size:20px;font-weight:700;color:#e74c3c">{tier.price}</div>
           </div>
 
           <ul style="list-style:none;margin:14px 0 0;padding:0">
