@@ -3,7 +3,7 @@ import Layout from "@/layouts/Layout.astro";
 import Footer from "@/components/Footer.astro";
 import config from "@/config";
 
-const BUY_URL = "https://www.kuaifaka.net/purchasing?link=zXKgv3";
+const BUY_URL = "https://www.kuaifaka.net/purchasing?link=zXKgv3";  // 备用默认
 
 const tiers = [
   {
@@ -13,6 +13,7 @@ const tiers = [
     name: "青铜会员",
     level: "基础档",
     price: "¥199",
+    buyUrl: "http://w.kami.vip/s/4eQNQ28G",
     benefits: [
       "解锁帖子墙",
       "解锁会员群",
@@ -28,6 +29,7 @@ const tiers = [
     name: "黄金会员",
     level: "进阶档",
     price: "¥499",
+    buyUrl: "http://w.kami.vip/s/Rlup63",
     benefits: [
       "含青铜会员全部权益",
       "会费可抵后续安排的消费",
@@ -42,6 +44,7 @@ const tiers = [
     name: "钻石会员",
     level: "顶配档",
     price: "¥6999",
+    buyUrl: "http://w.kami.vip/s/LsEbI2YR",
     benefits: [
       "含黄金会员全部权益",
       "解锁《通往性自由之路》",
@@ -85,7 +88,7 @@ const tiers = [
           </ul>
 
           <a
-            href={BUY_URL}
+            href={tier.buyUrl || BUY_URL}
             target="_blank"
             style={`display:block;text-align:center;margin-top:16px;padding:12px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600;background:#555;color:#fff;`}
           >
