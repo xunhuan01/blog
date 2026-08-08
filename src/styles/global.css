@@ -36,3 +36,10 @@
 :target {
   scroll-margin-block: 1rem;
 }
+
+/* 禁用 ClientRouter 页面切换的淡入淡出动画，切换更跟手、无中间空档感 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

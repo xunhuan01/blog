@@ -127,15 +127,15 @@ const rssHref = getRelativeLocaleUrl(
     <!-- 侧边栏（电脑端） -->
     <aside class="hidden sm:flex sm:flex-col sm:w-44 sm:items-center sm:border-r sm:border-border sm:min-h-svh sm:py-6 sm:fixed sm:left-0 sm:top-0 sm:bg-background sm:z-40 sm:pt-20">
       <nav class="flex flex-col items-center gap-6 mt-4 w-full">
-        <a href="/" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
+        <a href="/" data-astro-prefetch="viewport" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
           <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
           <span class="text-sm font-medium">文章</span>
         </a>
-        <a href="/about/" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
+        <a href="/about/" data-astro-prefetch="viewport" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
           <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span class="text-sm font-medium">聊天</span>
         </a>
-        <a href="/purchase/" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
+        <a href="/purchase/" data-astro-prefetch="viewport" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
           <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span class="text-sm font-medium">购买</span>
         </a>
@@ -147,15 +147,15 @@ const rssHref = getRelativeLocaleUrl(
     <!-- 手机端底部导航 -->
     <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
       <div class="flex justify-around items-center py-2">
-        <a href="/" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
+        <a href="/" data-astro-prefetch="viewport" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           <span>文章</span>
         </a>
-        <a href="/about/" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
+        <a href="/about/" data-astro-prefetch="viewport" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span>聊天</span>
         </a>
-        <a href="/purchase/" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
+        <a href="/purchase/" data-astro-prefetch="viewport" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span>购买</span>
         </a>
