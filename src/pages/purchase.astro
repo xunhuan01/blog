@@ -90,9 +90,12 @@ const tiers = [
 
           {tier.buyText ? (
             <>
-              <div style="display:block;text-align:center;margin-top:16px;padding:12px;border-radius:10px;font-size:15px;font-weight:600;background:#555;color:#fff;">
+              <a
+                href="/通往性自由之路"
+                style={`display:block;text-align:center;margin-top:16px;padding:12px;border-radius:10px;font-size:15px;font-weight:600;background:#555;color:#fff;text-decoration:none;cursor:pointer;`}
+              >
                 {tier.buyText}
-              </div>
+              </a>
               {tier.buyNote && (
                 <div style="text-align:center;font-size:12px;color:#999;margin-top:6px">{tier.buyNote}</div>
               )}
