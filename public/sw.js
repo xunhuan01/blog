@@ -1,5 +1,5 @@
-// 焦羽 PWA Service Worker — 离线缓存应用壳
-const CACHE = "jiaoyu-v1";
+// 焦羽 PWA Service Worker — 回访秒开（缓存优先 + 后台更新）
+const CACHE = "jiaoyu-v2";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
@@ -14,7 +14,7 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// 网络优先 + 失败回退缓存（静态站内容少，全量缓存）
+// stale-while-revalidate：有缓存先秒回，同时后台拉新存好；没缓存走网络（失败回退缓存）
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   if (request.method !== "GET") return;
@@ -22,14 +22,17 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== location.origin) return; // 不缓存跨域（chat.waiwei.top 等）
 
   e.respondWith(
-    fetch(request)
-      .then((resp) => {
-        if (resp && resp.status === 200) {
-          const copy = resp.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
-        }
-        return resp;
-      })
-      .catch(() => caches.match(request))
+    caches.match(request).then((cached) => {
+      const network = fetch(request)
+        .then((resp) => {
+          if (resp && resp.status === 200) {
+            const copy = resp.clone();
+            caches.open(CACHE).then((c) => c.put(request, copy));
+          }
+          return resp;
+        })
+        .catch(() => cached);
+      return cached || network;
+    })
   );
 });
