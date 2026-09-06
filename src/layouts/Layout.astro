@@ -5,6 +5,7 @@ import { getRelativeLocaleUrl } from "astro:i18n";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { getAssetPath } from "@/utils/withBase";
 import config from "@/config";
+import NavProgress from "@/components/NavProgress.astro";
 import "@/styles/global.css";
 
 type Props = {
@@ -166,6 +167,7 @@ const rssHref = getRelativeLocaleUrl(
     <div class="flex-1 sm:ml-44 flex flex-col pb-16 sm:pb-0">
       <slot />
     </div>
+    <NavProgress />
     <script>
       import "@/scripts/theme";
     </script>

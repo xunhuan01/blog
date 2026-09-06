@@ -1,0 +1,34 @@
+---
+---
+
+<span id="nav-progress" style="position:fixed;top:0;left:0;height:2px;width:0;background:#c5940e;z-index:9999;transition:width .2s ease,opacity .3s ease;opacity:0;pointer-events:none"></span>
+<script is:inline>
+(function () {
+  var bar = document.getElementById("nav-progress");
+  if (!bar) return;
+  var timer = null;
+  function start() {
+    bar.style.opacity = "1";
+    bar.style.width = "12%";
+    timer = setInterval(function () {
+      var w = parseFloat(bar.style.width) || 12;
+      if (w < 85) bar.style.width = Math.min(w + 9, 85) + "%";
+    }, 180);
+  }
+  function done() {
+    if (timer) { clearInterval(timer); timer = null; }
+    bar.style.width = "100%";
+    setTimeout(function () {
+      bar.style.opacity = "0";
+      setTimeout(function () { bar.style.width = "0"; }, 350);
+    }, 200);
+  }
+  document.addEventListener("click", function (e) {
+    var a = e.target && e.target.closest ? e.target.closest("a[href^='/']") : null;
+    // 只对非 SPA 拦截的链接（文章页、销售页）显示进度条
+    if (a && !a.closest("#tags-panel, #chat-panel, #purchase-panel") && a.pathname !== location.pathname) start();
+  }, true);
+  document.addEventListener("astro:page-load", done);
+  document.addEventListener("astro:after-swap", done);
+})();
+</script>
