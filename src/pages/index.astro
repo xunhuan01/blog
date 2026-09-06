@@ -131,6 +131,8 @@ const sortedTags = [
             }
           });
           resultCount.textContent = tag === "往期" ? `全部文章（${count}篇）` : `#${btn.textContent.trim()}（${count}篇）`;
+          // 记住当前选中的标签：从文章返回首页时恢复用（2026-09-06 用户要求）
+          try { sessionStorage.setItem("lastTag", tag); } catch (_) {}
           // 金色按钮只在选中"皮条往事"时显示
           const goldenBtn = document.getElementById("golden-btn");
           if (goldenBtn) {
@@ -138,9 +140,12 @@ const sortedTags = [
           }
         });
       });
-      // 默认选中皮条往事；若 URL 带 ?tag= 参数（从旧 /tags/[tag] 重定向来），选中对应标签
+      // 选中顺序：URL ?tag= 参数 > 上次选中的标签（从文章返回时保留）> 默认皮条往事
       const urlTag = new URLSearchParams(window.location.search).get("tag");
-      const targetBtn = urlTag ? document.querySelector(`[data-tag="${urlTag}"]`) : document.querySelector('[data-tag="皮条往事"]');
+      let lastTag = null;
+      try { lastTag = sessionStorage.getItem("lastTag"); } catch (_) {}
+      const targetTag = urlTag || lastTag || "皮条往事";
+      const targetBtn = document.querySelector(`[data-tag="${targetTag}"]`);
       if (targetBtn) targetBtn.click();
       else document.querySelector('[data-tag="皮条往事"]')?.click();
     }

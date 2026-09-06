@@ -200,7 +200,8 @@ const rssHref = getRelativeLocaleUrl(
               if (headerEl) headerEl.style.display = panelId === "tags-panel" ? "block" : "none";
               // 重新激活标签筛选
               if (panelId === "tags-panel") {
-                setTimeout(() => document.querySelector('[data-tag="皮条往事"]')?.click(), 0);
+                // 切回文章面板时恢复上次选中的标签（与 index.astro 的 lastTag 逻辑一致）
+                t==="tags-panel"&&setTimeout(()=>{let g=null;try{g=sessionStorage.getItem("lastTag")}catch(_){}document.querySelector('[data-tag="'+(g||"皮条往事")+'"]')?.click()},0)
               }
             }
           });
