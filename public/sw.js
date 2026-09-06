@@ -1,18 +1,21 @@
-// Service Worker v4：缓存优先 + 两梯队预热 + 点击优先
+// Service Worker v5：零抢跑策略
 // 策略：
-//  1. fetch = 缓存优先（秒回）+ 后台静默更新（stale-while-revalidate）
-//  2. 安装后后台预热：梯队一 = 默认视图（皮条往事）下前 6 篇（含置顶，动态取，非固定），
-//     200ms 间隔快跑；梯队二 = 其余文章/核心页，700ms 间隔慢跑
-//  3. 用户点击导航瞬间：掐掉预热正在进行的请求 + 暂停全部预热 6 秒，整条线路让给点击
-//  4. 访客回到首页时自动补预热新发布的文章（无需升级 SW）
-const CACHE = "jiaoyu-v4";
+//  1. 新访客打开首页：什么都不预载、不预热
+//  2. 他点文章：全力加载那一篇（预热必须让路），页面立刻切"正在加载"骨架屏
+//  3. 他开始阅读后（页面加载成功 +3 秒）：后台静默把全站文章逐篇备好
+//     （梯队：缓存里没有的才拉；严格串行 + 间隔，随时可被点击掐断/暂停 6 秒）
+//  4. 中途点别的文章：同 2，掐断预热全力加载目标；读完继续预热剩下的
+//  5. 回到首页时：补预热新发布的文章（限流：两次预热至少间隔 60 秒）
+const CACHE = "jiaoyu-v5";
 const WARM_DELAY_MS = 700;
-const PRIORITY_COUNT = 6;
-const FAST_DELAY_MS = 200;
+const WARM_START_DELAY_MS = 3000;   // 阅读开始后等多久才开跑
+const WARM_THROTTLE_MS = 60000;     // 两次预热之间最小间隔
 
-let currentCtrl = null;      // 预热正在进行的那一个请求的控制器
-let warmPausedUntil = 0;     // 预热暂停到什么时候（用户点击时设置）
-let rewarmRunning = false;   // 防止补预热重入
+let currentCtrl = null;
+let warmPausedUntil = 0;
+let rewarmRunning = false;
+let lastWarmAt = 0;
+let warmTimer = null;
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
@@ -24,11 +27,10 @@ self.addEventListener("activate", (e) => {
       .keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
-      .then(() => warmSite())
+    // ⚠️ 不在这里预热：新访客打开首页时不加载任何多余东西
   );
 });
 
-// fetch：缓存优先 + 后台更新；任何"用户在等"的未命中请求 → 预热让路 6 秒；首页更新后 → 补预热新文章
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   if (request.method !== "GET") return;
@@ -37,7 +39,7 @@ self.addEventListener("fetch", (e) => {
 
   const isWarm = request.headers.get("x-warm") === "1";
 
-  // 不带 x-warm 且缓存未命中 = 用户此刻真的要内容（点文章/预载卡片）→
+  // 不带 x-warm 且缓存未命中 = 用户此刻真的要内容（点文章/切页面）→
   // 立即掐掉预热在跑的请求 + 暂停 6 秒，整条线路让给他
   if (!isWarm) {
     caches.match(request).then((hit) => {
@@ -52,10 +54,8 @@ self.addEventListener("fetch", (e) => {
           if (resp && resp.status === 200) {
             const copy = resp.clone();
             caches.open(CACHE).then((c) => c.put(request, copy));
-            // 回到首页（含 SPA 切回）→ 稍后补预热新发布的文章
-            if (url.pathname === "/" && !isWarm) {
-              setTimeout(warmNewLinks, 4000);
-            }
+            // 用户成功打开了一个页面（开始阅读）→ 稍后开始/继续后台预热
+            if (!isWarm) scheduleWarm();
           }
           return resp;
         })
@@ -78,7 +78,7 @@ async function waitIfPaused() {
   while (Date.now() < warmPausedUntil) await sleep(500);
 }
 
-// 带可掐断控制的预热请求（一次一个，打 x-warm 标记，避免触发自己的让路逻辑）
+// 预热请求：打 x-warm 标记（不触发让路逻辑），一次一个，可被掐断
 function fetchWarm(path) {
   currentCtrl = new AbortController();
   return fetch(path, { signal: currentCtrl.signal, headers: { "x-warm": "1" } }).finally(() => {
@@ -86,7 +86,19 @@ function fetchWarm(path) {
   });
 }
 
-// ---------- 解析首页卡片（warmSite / warmNewLinks 共用）----------
+// ---------- 阅读后触发预热 ----------
+function scheduleWarm() {
+  if (rewarmRunning) return;
+  const since = Date.now() - lastWarmAt;
+  const wait = since < WARM_THROTTLE_MS ? WARM_THROTTLE_MS - since : WARM_START_DELAY_MS;
+  if (warmTimer) clearTimeout(warmTimer);
+  warmTimer = setTimeout(() => {
+    const cacheReady = caches.open(CACHE).then((c) => c.match("/__warmed__"));
+    cacheReady.then((warmed) => (warmed ? warmNewLinks() : warmSite()));
+  }, wait);
+}
+
+// ---------- 解析首页卡片（共用）----------
 // <li class="article-item" data-tags="..."> 紧跟 <a href="/posts/x/">；顺序 = 显示顺序（置顶优先）
 function parseCards(html) {
   const cards = [];
@@ -99,64 +111,53 @@ function parseCards(html) {
   return cards;
 }
 
-// ---------- 后台预热（首次安装，全量两梯队）----------
+// ---------- 全量预热（首次阅读后跑一次）----------
 async function warmSite() {
+  if (rewarmRunning) return;
+  rewarmRunning = true;
+  lastWarmAt = Date.now();
   try {
     const cache = await caches.open(CACHE);
-    // 已预热过就不再全量跑（新文章由 warmNewLinks 补）
-    if (await cache.match("/__warmed__")) return;
 
     const res = await fetch("/", { headers: { "x-warm": "1" } });
     if (!res || !res.ok) return;
     const html = await res.text();
     const cards = parseCards(html);
 
-    // 梯队一：默认视图（皮条往事）下最新的前 6 篇（置顶自动排第一，动态非固定）
-    const tier1 = cards
-      .filter((c) => c.tags.includes("皮条往事"))
-      .slice(0, PRIORITY_COUNT)
-      .map((c) => c.href);
-    const t1set = new Set(tier1);
-
-    for (const path of tier1) {
-      await waitIfPaused();
-      await sleep(FAST_DELAY_MS);
-      if (await cache.match(path)) continue;
-      try {
-        const r = await fetchWarm(path);
-        if (r && r.status === 200) await cache.put(path, r);
-      } catch (_) {
-        /* 被掐断/单篇失败都跳过 */
-      }
-    }
-
-    // 梯队二：其余文章 + 核心页，慢跑让路
-    const rest = [
-      ...cards.filter((c) => !t1set.has(c.href)).map((c) => c.href),
+    // 皮条往事栏目（默认视图）排前，其余跟上；全部备好
+    const ordered = [
+      ...cards.filter((c) => c.tags.includes("皮条往事")).map((c) => c.href),
+      ...cards.filter((c) => !c.tags.includes("皮条往事")).map((c) => c.href),
       "/about/",
       "/purchase/",
       "/avatar.png",
     ];
-    for (const p of rest) {
+
+    for (const p of ordered) {
       await waitIfPaused();
       await sleep(WARM_DELAY_MS);
       if (await cache.match(p)) continue;
       try {
         const r = await fetchWarm(p);
         if (r && r.status === 200) await cache.put(p, r);
-      } catch (_) {}
+      } catch (_) {
+        /* 被掐断/单篇失败都跳过 */
+      }
     }
 
     await cache.put("/__warmed__", new Response("ok"));
   } catch (_) {
-    /* 预热失败静默，下次 activate 再试 */
+    /* 静默 */
+  } finally {
+    rewarmRunning = false;
   }
 }
 
-// ---------- 补预热新文章（访客回到首页触发；只补缓存里没有的）----------
+// ---------- 补预热新文章（每次阅读后触发，60 秒限流）----------
 async function warmNewLinks() {
   if (rewarmRunning) return;
   rewarmRunning = true;
+  lastWarmAt = Date.now();
   try {
     const cache = await caches.open(CACHE);
     if (!(await cache.match("/__warmed__"))) return; // 还没全量预热过，交给 warmSite
