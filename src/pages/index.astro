@@ -7,6 +7,7 @@ import Footer from "@/components/Footer.astro";
 import Card from "@/components/Card.astro";
 import Datetime from "@/components/Datetime.astro";
 import ChatHall from "@/components/ChatHall.astro";
+import PurchaseTiers from "@/components/PurchaseTiers.astro";
 import { getPostUrl } from "@/utils/getPostPaths";
 import { getSortedPosts } from "@/utils/getSortedPosts";
 import { getUniqueTags } from "@/utils/getUniqueTags";
@@ -88,6 +89,13 @@ const sortedTags = [
     <!-- 聊天面板（大厅） -->
     <section id="chat-panel" class="pt-6 pb-6" style="display:none">
       <ChatHall />
+    </section>
+
+    <!-- 购买面板（与 /purchase/ 独立页共用 PurchaseTiers 组件） -->
+    <section id="purchase-panel" class="pt-6 pb-6" style="display:none">
+      <div style="max-width:420px;margin:0 auto">
+        <PurchaseTiers />
+      </div>
     </section>
   </main>
   <Footer />

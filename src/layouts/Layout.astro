@@ -119,7 +119,7 @@ const rssHref = getRelativeLocaleUrl(
       })();
     </script>
 
-    <ClientRouter />
+    <ClientRouter fallback="none" />
   </head>
   <body
     class="bg-background font-app text-foreground selection:bg-accent/75 selection:text-accent-foreground flex min-h-svh"
@@ -180,22 +180,22 @@ const rssHref = getRelativeLocaleUrl(
     <script>
       function initSPA() {
         const isHome = window.location.pathname === "/" || window.location.pathname === "/index.html";
-        document.querySelectorAll("aside a[href='/'], aside a[href='/tags/'], aside a[href='/about/'], nav.sm\\:hidden a[href='/'], nav.sm\\:hidden a[href='/tags/'], nav.sm\\:hidden a[href='/about/']").forEach(link => {
+        document.querySelectorAll("aside a[href='/'], aside a[href='/tags/'], aside a[href='/about/'], aside a[href='/purchase/'], nav.sm\\:hidden a[href='/'], nav.sm\\:hidden a[href='/tags/'], nav.sm\\:hidden a[href='/about/'], nav.sm\\:hidden a[href='/purchase/']").forEach(link => {
           link.addEventListener("click", e => {
             if (!isHome) return;
             e.preventDefault();
             const href = link.getAttribute("href");
-            ["tags-panel","chat-panel"].forEach(id => {
+            ["tags-panel","chat-panel","purchase-panel"].forEach(id => {
               const el = document.getElementById(id);
               if (el) el.style.display = "none";
             });
-            const panelId = href === "/about/" ? "chat-panel" : "tags-panel";
+            const panelId = href === "/about/" ? "chat-panel" : href === "/purchase/" ? "purchase-panel" : "tags-panel";
             const panel = document.getElementById(panelId);
             if (panel) {
               panel.style.display = "block";
               // 聊天面板隐藏顶部"焦羽.blog"标识，文章面板恢复
               const headerEl = document.querySelector("header");
-              if (headerEl) headerEl.style.display = panelId === "chat-panel" ? "none" : "block";
+              if (headerEl) headerEl.style.display = panelId === "tags-panel" ? "block" : "none";
               // 重新激活标签筛选
               if (panelId === "tags-panel") {
                 setTimeout(() => document.querySelector('[data-tag="皮条往事"]')?.click(), 0);
