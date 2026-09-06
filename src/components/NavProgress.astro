@@ -4,31 +4,101 @@
 <span id="nav-progress" style="position:fixed;top:0;left:0;height:2px;width:0;background:#c5940e;z-index:9999;transition:width .2s ease,opacity .3s ease;opacity:0;pointer-events:none"></span>
 <script is:inline>
 (function () {
-  var bar = document.getElementById("nav-progress");
-  if (!bar) return;
-  var timer = null;
-  function start() {
-    bar.style.opacity = "1";
-    bar.style.width = "12%";
-    timer = setInterval(function () {
-      var w = parseFloat(bar.style.width) || 12;
-      if (w < 85) bar.style.width = Math.min(w + 9, 85) + "%";
+  if (window.__navFx) return;
+  window.__navFx = true;
+
+  var overlay = null, barTimer = null, hideTimer = null, pending = false;
+
+  function barEl() { return document.getElementById("nav-progress"); }
+
+  function barStart() {
+    var b = barEl(); if (!b) return;
+    b.style.opacity = "1"; b.style.width = "12%";
+    if (barTimer) clearInterval(barTimer);
+    barTimer = setInterval(function () {
+      var w = parseFloat(b.style.width) || 12;
+      if (w < 85) b.style.width = Math.min(w + 9, 85) + "%";
     }, 180);
   }
-  function done() {
-    if (timer) { clearInterval(timer); timer = null; }
-    bar.style.width = "100%";
+
+  function barDone() {
+    if (barTimer) { clearInterval(barTimer); barTimer = null; }
+    var b = barEl(); if (!b) return;
+    b.style.width = "100%";
     setTimeout(function () {
-      bar.style.opacity = "0";
-      setTimeout(function () { bar.style.width = "0"; }, 350);
+      b.style.opacity = "0";
+      setTimeout(function () { b.style.width = "0"; }, 350);
     }, 200);
   }
+
+  function ensureOverlay() {
+    if (overlay && document.contains(overlay)) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "nav-skeleton";
+    overlay.style.cssText = "position:fixed;inset:0;background:#fff;z-index:60;display:none";
+    overlay.innerHTML =
+      '<div style="max-width:420px;margin:0 auto;padding:90px 24px 0">' +
+        '<div style="width:34px;height:34px;border:3px solid #eee;border-top-color:#c5940e;border-radius:50%;margin:0 auto 20px;animation:navfxspin .8s linear infinite"></div>' +
+        '<div id="nav-skel-title" style="font-size:16px;font-weight:700;color:#333;text-align:center;margin-bottom:30px;line-height:1.6"></div>' +
+        '<div style="height:12px;background:#f0f0f0;border-radius:6px;margin-bottom:10px"></div>' +
+        '<div style="height:12px;background:#f0f0f0;border-radius:6px;margin-bottom:10px;width:92%"></div>' +
+        '<div style="height:12px;background:#f0f0f0;border-radius:6px;margin-bottom:10px;width:96%"></div>' +
+        '<div style="height:12px;background:#f0f0f0;border-radius:6px;width:58%"></div>' +
+      '</div>';
+    if (!document.getElementById("nav-fx-style")) {
+      var st = document.createElement("style");
+      st.id = "nav-fx-style";
+      st.textContent = "@keyframes navfxspin{to{transform:rotate(360deg)}}";
+      document.head.appendChild(st);
+    }
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function showSkeleton(title) {
+    var ov = ensureOverlay();
+    var t = document.getElementById("nav-skel-title");
+    if (t) t.textContent = title ? "正在打开《" + title + "》" : "正在打开…";
+    ov.style.display = "block";
+    hideTimer = setTimeout(hideAll, 8000); // 兜底：8 秒必消失，不留死屏
+  }
+
+  function hideAll() {
+    pending = false;
+    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+    if (overlay) overlay.style.display = "none";
+    barDone();
+  }
+
   document.addEventListener("click", function (e) {
     var a = e.target && e.target.closest ? e.target.closest("a[href^='/']") : null;
-    // 只对非 SPA 拦截的链接（文章页、销售页）显示进度条
-    if (a && !a.closest("#tags-panel, #chat-panel, #purchase-panel") && a.pathname !== location.pathname) start();
+    if (!a) return;
+    // 首页上这三个 href 是 SPA 面板瞬时切换（文章/聊天/购买），不触发；
+    // 面板内的文章卡片、金色按钮、其他页面的一切链接都是真实跳转，必须给反应
+    if (location.pathname === "/" &&
+        ["/", "/about/", "/purchase/", "/tags/"].indexOf(a.pathname) !== -1 &&
+        !a.hash) return;
+    // 同页链接不触发
+    if (a.pathname === location.pathname && !a.hash) return;
+
+    // 抓被点文章的标题（首页卡片/上下篇/按钮都能取到）
+    var title = "";
+    var card = a.closest("li.article-item");
+    if (card) {
+      var h = card.querySelector("h3");
+      if (h) title = h.textContent.trim();
+    }
+    if (!title) title = (a.textContent || "").trim().slice(0, 24);
+
+    pending = true;
+    barStart();
+    // 120ms 内真页面切好了 → 不显示骨架（避免秒开时闪烁）；没切好 → 立刻乐观切换
+    setTimeout(function () { if (pending) showSkeleton(title); }, 120);
   }, true);
-  document.addEventListener("astro:page-load", done);
-  document.addEventListener("astro:after-swap", done);
+
+  function onDone() { if (pending) hideAll(); else barDone(); }
+  document.addEventListener("astro:after-swap", onDone);
+  document.addEventListener("astro:page-load", onDone);
+  window.addEventListener("popstate", onDone);
 })();
 </script>
