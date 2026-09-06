@@ -92,8 +92,18 @@
 
     pending = true;
     barStart();
-    // 120ms 内真页面切好了 → 不显示骨架（避免秒开时闪烁）；没切好 → 立刻乐观切换
-    setTimeout(function () { if (pending) showSkeleton(title); }, 120);
+    var url = a.href;
+    // 缓存里有 → 秒切，绝不闪骨架屏；缓存里没有 → 真冷启动，0 延迟立刻切骨架屏
+    // caches 不可用（iOS 无痕等）→ 退回 120ms 判断：切得快就不闪
+    if (window.caches && caches.match) {
+      caches.match(url).then(function (hit) {
+        if (pending && !hit) showSkeleton(title);
+      }).catch(function () {
+        setTimeout(function () { if (pending) showSkeleton(title); }, 120);
+      });
+    } else {
+      setTimeout(function () { if (pending) showSkeleton(title); }, 120);
+    }
   }, true);
 
   function onDone() { if (pending) hideAll(); else barDone(); }
