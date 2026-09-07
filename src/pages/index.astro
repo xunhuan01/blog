@@ -42,8 +42,8 @@ const sortedTags = [
   <main id="main-content" class="app-layout">
     <!-- 分类面板 -->
     <section id="tags-panel" class="pt-6 pb-6" style="display:block">
-      <div class="flex gap-8 mt-2">
-        <div class="w-28 sm:w-36 shrink-0">
+      <div class="sm:flex sm:gap-8 mt-2">
+        <div class="hidden sm:block sm:w-36 shrink-0">
           <ul class="flex flex-col gap-1" id="tag-list">
             {sortedTags.map(({ tag, tagName }) => (
               <li>
@@ -55,7 +55,14 @@ const sortedTags = [
             </li>
           </ul>
         </div>
-        <div class="flex-1 min-w-0" id="article-list">
+        <!-- 手机端: 左下浮动标签丸 (方案C-改②: 滚动时自动隐走, 停下0.45s滑回) -->
+        <div id="tag-dock" class="sm:hidden fixed left-3 bottom-16 z-40 flex flex-col items-start gap-1.5">
+          {sortedTags.map(({ tag, tagName }) => (
+            <button data-tag={tagName} class="tag-btn text-left text-sm py-1.5 px-3 rounded-full bg-background/95 border border-border shadow-sm backdrop-blur-sm text-foreground/70">#{tagName}</button>
+          ))}
+          <button data-tag="往期" class="tag-btn text-left text-sm py-1.5 px-3 rounded-full bg-background/95 border border-border shadow-sm backdrop-blur-sm text-foreground/70">📚 往期</button>
+        </div>
+        <div class="sm:flex-1 min-w-0" id="article-list">
           <p class="text-xs text-muted-foreground mb-3" id="result-count">全部文章（{sortedAllPosts.filter(p => !(p.data.tags || []).includes("小说")).length}篇）</p>
           <div style="position:relative;max-width:340px;margin:0 auto 16px;display:none" id="golden-btn">
             <a href="/通往性自由之路" data-astro-prefetch="viewport" style="display:block;padding:14px 20px;background:linear-gradient(135deg,#d4a017,#c5940e);color:#fff;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(196,148,16,0.4)">
@@ -110,11 +117,13 @@ const sortedTags = [
     if (tagBtns.length && articles.length && resultCount) {
       tagBtns.forEach(btn => {
         btn.addEventListener("click", () => {
-          tagBtns.forEach(b => {
-            b.classList.remove("bg-accent/10", "text-accent", "font-medium");
-          });
           const tag = btn.dataset.tag;
-          btn.classList.add("bg-accent/10", "text-accent", "font-medium");
+          // 同步高亮: 桌面标签列与手机浮动丸里 data-tag 相同的按钮一起点亮
+          tagBtns.forEach(b => {
+            b.classList.toggle("bg-accent/10", b.dataset.tag === tag);
+            b.classList.toggle("text-accent", b.dataset.tag === tag);
+            b.classList.toggle("font-medium", b.dataset.tag === tag);
+          });
           let count = 0;
           articles.forEach(article => {
             const articleTags = article.dataset.tags;
@@ -148,6 +157,17 @@ const sortedTags = [
       const targetBtn = document.querySelector(`[data-tag="${targetTag}"]`);
       if (targetBtn) targetBtn.click();
       else document.querySelector('[data-tag="皮条往事"]')?.click();
+    }
+    // 浮动标签丸: 滚动时隐走, 停止 450ms 后滑回 (只绑一次)
+    const dock = document.getElementById("tag-dock");
+    if (dock && !window.__dockScrollBound) {
+      window.__dockScrollBound = true;
+      let dockTimer;
+      window.addEventListener("scroll", () => {
+        dock.classList.add("dock-hide");
+        clearTimeout(dockTimer);
+        dockTimer = setTimeout(() => dock.classList.remove("dock-hide"), 450);
+      }, { passive: true });
     }
   }
   initApp();

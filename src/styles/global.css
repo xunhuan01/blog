@@ -43,3 +43,8 @@
   animation: none;
   mix-blend-mode: normal;
 }
+
+
+/* 手机端左下浮动标签丸 (方案C-改②): 滚动隐走/回滑 */
+#tag-dock { transition: opacity 0.25s ease, transform 0.25s ease; }
+#tag-dock.dock-hide { opacity: 0; transform: translateX(-14px); pointer-events: none; }
