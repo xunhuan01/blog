@@ -56,6 +56,10 @@ const rssHref = getRelativeLocaleUrl(
 
     <!-- Font removed - using system font -->
 
+    <!-- 聊天室握手预热: 提前完成 TCP+TLS, 点进聊天免等握手 (2026-09-07) -->
+    <link rel="preconnect" href="https://chat.waiwei.top" crossorigin />
+    <link rel="dns-prefetch" href="https://chat.waiwei.top" />
+
     <!-- Primary meta -->
     <title>{title}</title>
     <meta name="title" content={title} />
