@@ -59,6 +59,9 @@ const rssHref = getRelativeLocaleUrl(
     <!-- 聊天室握手预热: 提前完成 TCP+TLS, 点进聊天免等握手 (2026-09-07) -->
     <link rel="preconnect" href="https://chat.waiwei.top" crossorigin />
     <link rel="dns-prefetch" href="https://chat.waiwei.top" />
+    <!-- 方案4: 同站关键资源提前握手+DNS预热 (h1下每个资源独立连接, 提前建好省串行等待 2026-09-08) -->
+    <link rel="preconnect" href="https://waiwei.top" crossorigin />
+    <link rel="dns-prefetch" href="https://waiwei.top" />
 
     <!-- Primary meta -->
     <title>{title}</title>
