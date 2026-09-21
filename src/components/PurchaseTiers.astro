@@ -54,47 +54,49 @@ const tiers = [
 ];
 ---
 
-<div style="text-align:center;padding:0 0 20px">
-  <h2 style="font-size:20px;font-weight:700;margin:0">👑 会员购买</h2>
+<div style="text-align:center;padding:0 0 9px">
+  <h2 style="font-size:19px;font-weight:700;margin:0">👑 会员购买</h2>
 </div>
 
 {tiers.map(tier => (
-  <div style={`background:#fff;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,0.06);border:1px solid #eee;`}>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+  <div style={`background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 10px rgba(0,0,0,0.06);border:1px solid #eee;`}>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:26px;line-height:1;display:flex">{tier.iconHtml ? <span set:html={tier.iconHtml} /> : tier.icon}</span>
+        <span style="font-size:24px;line-height:1;display:flex">{tier.iconHtml ? <span set:html={tier.iconHtml} /> : tier.icon}</span>
         <div>
-          <div style="font-size:17px;font-weight:700;color:#333">{tier.name}</div>
+          <div style="font-size:16px;font-weight:700;color:#333">{tier.name}</div>
           <div style="font-size:12px;color:#999">{tier.level}</div>
         </div>
       </div>
-      <div style="font-size:20px;font-weight:700;color:#e74c3c">{tier.price}</div>
+      <div style="font-size:19px;font-weight:700;color:#e74c3c">{tier.price}</div>
     </div>
 
-    <ul style="list-style:none;margin:14px 0 0;padding:0">
+    <ul style="list-style:none;margin:8px 0 0;padding:0">
       {tier.benefits.map(b => (
-        <li style="font-size:13px;color:#666;line-height:1.8;padding-left:2px">
+        <li style="font-size:13px;color:#666;line-height:1.5;padding-left:2px">
           <span style="color:#2ecc71;margin-right:6px">✓</span>{b}
         </li>
       ))}
     </ul>
 
+    {/* 顺序统一：权益在上、按钮在下（与其他两档一致，2026-09-21 用户要求改回）。
+        三张卡片的间距已整体压缩，手机上按钮仍落在首屏内，无需下滑。 */}
     {tier.buyText ? (
       <>
         <a
           href="/通往性自由之路"
-          style={`display:block;text-align:center;margin-top:16px;padding:12px;border-radius:10px;font-size:15px;font-weight:600;background:#555;color:#fff;text-decoration:none;cursor:pointer;`}
+          style={`display:block;text-align:center;margin-top:8px;padding:10px;border-radius:10px;font-size:14px;font-weight:600;background:#555;color:#fff;text-decoration:none;cursor:pointer;`}
         >
           {tier.buyText}
         </a>
         {tier.buyNote && (
-          <div style="text-align:center;font-size:12px;color:#999;margin-top:6px">{tier.buyNote}</div>
+          <div style="text-align:center;font-size:12px;color:#999;margin-top:5px">{tier.buyNote}</div>
         )}
       </>
     ) : (
       <a
         href={tier.buyUrl || BUY_URL}
-        style={`display:block;text-align:center;margin-top:16px;padding:12px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600;background:#555;color:#fff;`}
+        style={`display:block;text-align:center;margin-top:8px;padding:10px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600;background:#555;color:#fff;`}
       >
         {tier.btnText}
       </a>

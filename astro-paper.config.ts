@@ -3,7 +3,7 @@ import { defineAstroPaperConfig } from "./src/types/config";
 export default defineAstroPaperConfig({
   site: {
     url: "https://waiwei.top",
-    title: "焦羽",
+    title: "焦羽.blog",
     description: "焦羽",
     author: "焦羽",
     profile: "/",

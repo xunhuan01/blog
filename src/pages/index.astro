@@ -64,12 +64,6 @@ const sortedTags = [
         </div>
         <div class="sm:flex-1 min-w-0" id="article-list">
           <p class="text-xs text-muted-foreground mb-3" id="result-count">全部文章（{sortedAllPosts.filter(p => !(p.data.tags || []).includes("小说")).length}篇）</p>
-          <div style="position:relative;max-width:340px;margin:0 auto 16px;display:none" id="golden-btn">
-            <a href="/通往性自由之路" data-astro-prefetch="viewport" style="display:block;padding:14px 20px;background:linear-gradient(135deg,#d4a017,#c5940e);color:#fff;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(196,148,16,0.4)">
-              🔗 通往性自由之路
-            </a>
-            <span style="position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;line-height:1.2">置顶</span>
-          </div>
           <ul class="flex flex-col gap-3">
             {sortedAllPosts.map(({ id, data, filePath }) => {
               const { title, tags: postTags, password, ...rest } = data;
@@ -142,11 +136,7 @@ const sortedTags = [
           resultCount.textContent = tag === "往期" ? `全部文章（${count}篇）` : `#${btn.textContent.trim()}（${count}篇）`;
           // 记住当前选中的标签：从文章返回首页时恢复用（2026-09-06 用户要求）
           try { sessionStorage.setItem("lastTag", tag); } catch (_) {}
-          // 金色按钮只在选中"皮条往事"时显示
-          const goldenBtn = document.getElementById("golden-btn");
-          if (goldenBtn) {
-            goldenBtn.style.display = (tag === "皮条往事") ? "block" : "none";
-          }
+          // 首页金色置顶按钮已按用户要求移除（2026-09-21）：通往性自由之路只在购买页保留入口，列表页不再出现
         });
       });
       // 选中顺序：URL ?tag= 参数 > 上次选中的标签（从文章返回时保留）> 默认皮条往事
