@@ -41,8 +41,8 @@ const sortedTags = [
   <Header />
   <main id="main-content" class="app-layout">
     <!-- 分类面板 -->
-    <section id="tags-panel" class="pt-6 pb-6" style="display:block">
-      <div class="sm:flex sm:gap-8 mt-2">
+    <section id="tags-panel" class="pt-2 pb-5" style="display:block">
+      <div class="sm:flex sm:gap-8 mt-0">
         <div class="hidden sm:block sm:w-36 shrink-0">
           <ul class="flex flex-col gap-1" id="tag-list">
             {sortedTags.map(({ tag, tagName }) => (
@@ -63,7 +63,7 @@ const sortedTags = [
           <button data-tag="往期" class="tag-btn text-left text-sm py-1.5 px-3 rounded-full bg-background/95 border border-border shadow-sm backdrop-blur-sm text-foreground/70">📚 往期</button>
         </div>
         <div class="sm:flex-1 min-w-0" id="article-list">
-          <p class="text-xs text-muted-foreground mb-3" id="result-count">全部文章（{sortedAllPosts.filter(p => !(p.data.tags || []).includes("小说")).length}篇）</p>
+          <p class="text-xs text-muted-foreground mb-2" id="result-count">全部文章（{sortedAllPosts.filter(p => !(p.data.tags || []).includes("小说")).length}篇）</p>
           <ul class="flex flex-col gap-3">
             {sortedAllPosts.map(({ id, data, filePath }) => {
               const { title, tags: postTags, password, ...rest } = data;
@@ -93,7 +93,7 @@ const sortedTags = [
     </section>
 
     <!-- 购买面板（与 /purchase/ 独立页共用 PurchaseTiers 组件） -->
-    <section id="purchase-panel" class="pt-6 pb-6" style="display:none">
+    <section id="purchase-panel" class="pt-2 pb-6" style="display:none">
       <div style="max-width:420px;margin:0 auto">
         <PurchaseTiers />
       </div>
@@ -112,11 +112,9 @@ const sortedTags = [
       tagBtns.forEach(btn => {
         btn.addEventListener("click", () => {
           const tag = btn.dataset.tag;
-          // 同步高亮: 桌面标签列与手机浮动丸里 data-tag 相同的按钮一起点亮
+          // 同步高亮: 桌面标签列与手机浮动丸里 data-tag 相同的按钮一起点亮（蓝底白字）
           tagBtns.forEach(b => {
-            b.classList.toggle("bg-accent/10", b.dataset.tag === tag);
-            b.classList.toggle("text-accent", b.dataset.tag === tag);
-            b.classList.toggle("font-medium", b.dataset.tag === tag);
+            b.classList.toggle("tag-active", b.dataset.tag === tag);
           });
           let count = 0;
           articles.forEach(article => {

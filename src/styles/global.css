@@ -45,6 +45,17 @@
 }
 
 
+/* 选中标签：蓝底白字（2026-09-21 用户要求——要让访客一眼看出当前在哪个标签） */
+.tag-btn.tag-active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+  font-weight: 500;
+}
+.tag-btn.tag-active:hover {
+  background: #1d4ed8;
+}
+
 /* 手机端左下浮动标签丸 (方案C-改②): 滚动隐走/回滑 */
 #tag-dock { transition: opacity 0.25s ease, transform 0.25s ease; }
 #tag-dock.dock-hide { opacity: 0; transform: translateX(-14px); pointer-events: none; }
