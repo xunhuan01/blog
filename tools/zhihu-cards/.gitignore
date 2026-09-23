@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+zhihu_cards_state.json
+watch.log
+out/
