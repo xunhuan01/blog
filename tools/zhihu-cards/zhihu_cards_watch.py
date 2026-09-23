@@ -108,7 +108,7 @@ def main():
         for ln in log.splitlines():
             if ln.startswith("问题体标题:"):
                 qtitle = ln.split(":", 1)[1].strip()
-        sent = tg.send(files, caption=title)
+        sent = tg.send(files, caption_prefix=title)
         # send_tg.send 返回 0=全部成功 / 2=有失败；发失败就不记账，下一轮重试
         if sent != 0:
             lines.append("⚠️ TG 发送失败，未记账，下轮重试：%s" % title)
