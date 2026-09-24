@@ -16,15 +16,23 @@ const HALL = {
   <a
     href={HALL.wall}
     class="hall-card"
-    style="display:flex;flex-direction:column;justify-content:space-between;height:33vh;min-height:200px;max-height:290px;margin-top:12px;padding:20px;border-radius:18px;background:linear-gradient(150deg,#eef4ff 0%,#e2ecff 100%);border:1px solid #d8e5ff;text-decoration:none;box-shadow:0 4px 16px rgba(37,99,235,0.08)"
+    style="display:flex;flex-direction:column;justify-content:space-between;height:33vh;min-height:236px;max-height:290px;margin-top:12px;padding:20px;border-radius:18px;background:linear-gradient(150deg,#eef4ff 0%,#e2ecff 100%);border:1px solid #d8e5ff;text-decoration:none;box-shadow:0 4px 16px rgba(37,99,235,0.08)"
   >
     <div style="display:flex;align-items:flex-start;justify-content:space-between">
       <span style="font-size:30px;line-height:1">📢</span>
-      <span style="font-size:10px;color:#fff;background:#fa5151;border-radius:4px;padding:2px 6px">会员</span>
+      <span style="display:inline-flex;align-items:center;gap:4px">
+        <span id="wall-new-chip" style="display:none;font-size:10px;color:#fff;background:#2563eb;border-radius:4px;padding:2px 6px"></span>
+        <span style="font-size:10px;color:#fff;background:#fa5151;border-radius:4px;padding:2px 6px">会员</span>
+      </span>
     </div>
     <div>
       <div style="font-size:22px;font-weight:800;color:#111;letter-spacing:0.5px">资源墙</div>
       <div style="font-size:13px;color:#5b6b82;margin-top:6px">定期分享各城市资源</div>
+      <!-- 最近更新：进页面拉一次 /api/wall-updates，最多显示 3 条摘要；拿不到数据整块不显示（2026-09-24） -->
+      <div id="wall-updates" style="display:none;margin-top:8px;font-size:11.5px;color:#5b6b82;line-height:1.55">
+        <div id="wall-updates-head" style="color:#2563eb;font-weight:600"></div>
+        <div id="wall-updates-list"></div>
+      </div>
       <div style="display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:13px;font-weight:600;color:#2563eb">
         进入<span style="font-size:14px">→</span>
       </div>
@@ -86,6 +94,56 @@ const HALL = {
 </style>
 
 <script>
+  // 资源墙「最近更新」：进页面拉一次接口，显示最近 3 条摘要（2026-09-24）
+  // 拿不到数据 / 没有帖子 → 整块不显示，保持原样（不会出空框）
+  (function () {
+    const API = "https://chat.waiwei.top/api/wall-updates";
+    const wrap = document.getElementById("wall-updates");
+    const head = document.getElementById("wall-updates-head");
+    const listEl = document.getElementById("wall-updates-list");
+    const chip = document.getElementById("wall-new-chip");
+    if (!wrap || !head || !listEl || !chip) return;
+
+    function esc(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function fmt(iso) {
+      const d = new Date(iso);
+      if (!iso || isNaN(d.getTime())) return "";
+      const diff = (Date.now() - d.getTime()) / 1000;
+      if (diff < 60) return "刚刚";
+      if (diff < 3600) return Math.floor(diff / 60) + "分钟前";
+      if (diff < 86400) return Math.floor(diff / 3600) + "小时前";
+      const m = (d.getMonth() + 1) + "月" + d.getDate() + "日";
+      return d.getFullYear() === new Date().getFullYear() ? m : d.getFullYear() + "年" + m;
+    }
+
+    fetch(API, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d || !d.count || !Array.isArray(d.items) || !d.items.length) return;
+        const newest = (d.items[0] && d.items[0].time) || d.last;
+        let seen = null;
+        try { seen = localStorage.getItem("wall_seen"); } catch (e) {}
+        // 首次访问：按"这几条都算新"展示；之后：只数比上次看到的时间更新的
+        const fresh = seen ? d.items.filter((i) => i.time && i.time > seen).length : d.items.length;
+        try { if (newest) localStorage.setItem("wall_seen", newest); } catch (e) {}
+
+        head.textContent = "↻ 最近更新 " + fmt(newest) + " · 共 " + d.count + " 条";
+        listEl.innerHTML = d.items
+          .map((i) => '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">· ' + esc(i.text) + "</div>")
+          .join("");
+        if (fresh > 0) {
+          chip.textContent = fresh + " 条新";
+          chip.style.display = "inline-block";
+        }
+        wrap.style.display = "block";
+      })
+      .catch(() => {});   // 接口挂了就静默保持原样
+  })();
+
   // PWA 安装按钮逻辑
   (function () {
     const wrap = document.getElementById("install-wrap");
