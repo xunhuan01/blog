@@ -131,7 +131,7 @@ const HALL = {
         const fresh = seen ? d.items.filter((i) => i.time && i.time > seen).length : d.items.length;
         try { if (newest) localStorage.setItem("wall_seen", newest); } catch (e) {}
 
-        head.textContent = "↻ 最近更新 " + fmt(newest) + " · 共 " + d.count + " 条";
+        head.textContent = "↻ 最近更新 " + fmt(newest);
         listEl.innerHTML = d.items
           .map((i) => '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">· ' + esc(i.text) + "</div>")
           .join("");
