@@ -90,8 +90,9 @@ const HALL = {
     </div>
   </div>
 
-  <!-- 安装到桌面（PWA）：绿色线条图标（去掉圆形绿底）+ 一行小字；用 margin:auto 落在中间偏下 -->
-  <div id="install-wrap" style="display:flex;flex-direction:column;align-items:center;gap:8px;margin:auto auto 10vh;margin:auto auto 10svh">
+  <!-- 安装到桌面（PWA）：绿色线条图标（去掉圆形绿底）+ 一行小字；桌面端用 margin:auto 落在中间偏下，
+       手机端由样式表钉死在底部三栏正上方（margin 不能写在这里，否则行内样式会盖掉样式表，2026-09-26） -->
+  <div id="install-wrap" style="display:flex;flex-direction:column;align-items:center;gap:8px">
     <button id="install-btn" title="安装到桌面" style="background:none;border:none;padding:0;cursor:pointer;color:#07c160;display:flex;align-items:center;justify-content:center;transition:transform 0.15s">
       <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     </button>
@@ -109,6 +110,26 @@ const HALL = {
   .hall-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 桌面端：沿用原来的「中间偏下」（原来写在行内 margin 上，见 2026-09-26 说明） */
+  #install-wrap {
+    margin: auto auto 10vh;
+    margin: auto auto 10svh;
+  }
+
+  /* 手机端：「安装到桌面」钉死在底部三栏【聊天】按钮正上方（2026-09-26 用户指定）
+     用 fixed 是为了跟屏幕尺寸解耦 —— 任何手机上到屏幕底边的距离都一样。
+     底部导航高约 55px（py-2 + 图标 + 文字），这里留 7px 缝。 */
+  @media (max-width: 639px) {
+    #install-wrap {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(55px + 7px);
+      margin: 0;
+      z-index: 45; /* 低于底部导航(z-50)，高于正文内容 */
+    }
   }
 </style>
 
