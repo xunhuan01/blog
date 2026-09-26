@@ -182,7 +182,7 @@ const rssHref = getRelativeLocaleUrl(
     </nav>
 
     <!-- 主内容 -->
-    <div class="flex-1 sm:ml-44 flex flex-col pb-16 sm:pb-0">
+    <div id="page-shell" class="flex-1 sm:ml-44 flex flex-col pb-16 sm:pb-0">
       <slot />
     </div>
     <NavProgress />
@@ -205,15 +205,28 @@ const rssHref = getRelativeLocaleUrl(
       // 成因② 手机上返回文章面板会把桌面端顶部标题栏强制 display:block（多出 40px），把内容往下顶
       const PANEL_SCROLL = {};
       let curPanelId = "tags-panel";
+      // 手机端首页是 App 式外壳（窗口不滚，改由 #page-shell 滚），桌面端仍是整页滚 —— 两种都要照顾
+      function scrollHost() {
+        const shell = document.getElementById("page-shell");
+        if (shell && getComputedStyle(shell).overflowY === "auto") return shell;
+        return null; // null = 用窗口
+      }
+      function readScroll() {
+        const h = scrollHost();
+        return Math.round(h ? h.scrollTop : (window.scrollY || 0));
+      }
       function restorePanelScroll(panelId) {
         const go = () => {
-          const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+          const h = scrollHost();
+          const max = h ? Math.max(0, h.scrollHeight - h.clientHeight)
+                        : Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
           const y = Math.min(PANEL_SCROLL[panelId] || 0, max);
+          if (h) { h.scrollTop = y; return; }
           // html 上有 scroll-smooth：不加 behavior:"instant" 会看到一段平滑滚动动画
           try { window.scrollTo({ top: y, left: 0, behavior: "instant" }); }
           catch (_) { window.scrollTo(0, y); }
         };
-        requestAnimationFrame(() => { go(); setTimeout(go, 0); }); // 再兜一次：等标签筛选重排完成
+        requestAnimationFrame(() => { go(); setTimeout(go, 0); setTimeout(go, 60); }); // 再兜两次：等标签筛选重排完成
       }
       function initSPA() {
         const isHome = window.location.pathname === "/" || window.location.pathname === "/index.html";
@@ -221,8 +234,12 @@ const rssHref = getRelativeLocaleUrl(
           link.addEventListener("click", e => {
             if (!isHome) return;
             e.preventDefault();
+            // initSPA 会被执行两次（脚本本身 + astro:page-load），同一次点击只处理一遍，
+            // 否则第二个处理器会把刚记下的滚动位置覆盖成 0
+            if (e.__panelSwitched) return;
+            e.__panelSwitched = true;
             const href = link.getAttribute("href");
-            PANEL_SCROLL[curPanelId] = Math.round(window.scrollY || 0); // 先记住当前面板滚到哪
+            PANEL_SCROLL[curPanelId] = readScroll(); // 先记住当前面板滚到哪
             ["tags-panel","chat-panel","purchase-panel"].forEach(id => {
               const el = document.getElementById(id);
               if (el) el.style.display = "none";
@@ -237,7 +254,9 @@ const rssHref = getRelativeLocaleUrl(
               // 重新激活标签筛选
               if (panelId === "tags-panel") {
                 // 切回文章面板时恢复上次选中的标签（与 index.astro 的 lastTag 逻辑一致）
-                t==="tags-panel"&&setTimeout(()=>{let g=null;try{g=sessionStorage.getItem("lastTag")}catch(_){}document.querySelector('[data-tag="'+(g||"皮条往事")+'"]')?.click()},0)
+                // 注意：这里原来写的是 `t==="tags-panel"&&setTimeout(...)`，t 未定义 →
+                // 每次点击都抛 ReferenceError，后面「记滚动位置/恢复滚动」的代码全被跳过（2026-09-26 修）
+                setTimeout(() => { let g=null; try{g=sessionStorage.getItem("lastTag")}catch(_){} document.querySelector('[data-tag="'+(g||"皮条往事")+'"]')?.click() }, 0);
               }
             }
             curPanelId = panelId;

@@ -151,13 +151,37 @@ const sortedTags = [
     if (dock && !window.__dockScrollBound) {
       window.__dockScrollBound = true;
       let dockTimer;
-      window.addEventListener("scroll", () => {
+      const hideDock = () => {
         dock.classList.add("dock-hide");
         clearTimeout(dockTimer);
         dockTimer = setTimeout(() => dock.classList.remove("dock-hide"), 450);
-      }, { passive: true });
+      };
+      window.addEventListener("scroll", hideDock, { passive: true });
+      // 手机端首页改由 #page-shell 承担滚动（App 式外壳，见文件末尾样式），它滚也要收起标签丸
+      const shell = document.getElementById("page-shell");
+      if (shell) shell.addEventListener("scroll", hideDock, { passive: true });
     }
   }
   initApp();
   document.addEventListener("astro:page-load", initApp);
 </script>
+
+<style is:global>
+  /* 手机端首页 = App 式外壳（2026-09-26）
+     问题：底栏【文章/聊天/购买】切换时整页“往下沉”一下。
+     成因：文章列表面板很长、聊天/购买只有一屏 → 切面板时窗口滚动位置和文档高度突变
+           → 手机地址栏跟着收/放 → 固定在底部的三栏跟着挪一下。
+     做法：只在手机端把窗口的滚动彻底关掉，让 #main-content 自己滚。
+           这样切面板时窗口 scrollY 恒为 0、文档高度恒定，浏览器没理由动，三栏纹丝不动。
+     兼容：:has() 不支持的老浏览器自动退回原来的整页滚动方式，不会更差。 */
+  @media (max-width: 639px) {
+    html:has(#chat-panel) { height: 100svh; overflow: hidden; }
+    body:has(#chat-panel) { height: 100svh; min-height: 0; overflow: hidden; }
+    /* 内容外壳（Layout 里包住 <slot/> 的那层 #page-shell）接管滚动：
+       它本来就有 flex-1 + pb-16（给底部导航留位），这里只加 min-height:0 + overflow-y:auto */
+    body:has(#chat-panel) > #page-shell {
+      min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+</style>
