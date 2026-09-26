@@ -59,6 +59,9 @@ const rssHref = getRelativeLocaleUrl(
     <!-- 聊天室握手预热: 提前完成 TCP+TLS, 点进聊天免等握手 (2026-09-07) -->
     <link rel="preconnect" href="https://chat.waiwei.top" crossorigin />
     <link rel="dns-prefetch" href="https://chat.waiwei.top" />
+    <!-- 线路一（上海阿里云 IP 直连，客服2）同样预热握手 (2026-09-26)；IP 无需 dns-prefetch，
+         且不写 crossorigin —— 访客点它属于页面跳转，走的是非 CORS 连接池 -->
+    <link rel="preconnect" href="https://139.224.1.54:9443" />
     <!-- 方案4: 同站关键资源提前握手+DNS预热 (h1下每个资源独立连接, 提前建好省串行等待 2026-09-08) -->
     <link rel="preconnect" href="https://waiwei.top" crossorigin />
     <link rel="dns-prefetch" href="https://waiwei.top" />
@@ -195,6 +198,23 @@ const rssHref = getRelativeLocaleUrl(
       }
     </script>
     <script>
+      // 面板切换的滚动位置管理（2026-09-26 修「点聊天时整个页面突然一顿」）
+      // 成因① 文章列表面板很长、聊天/购买面板只有一屏，切换时不重置滚动位置，
+      //       浏览器直接把旧面板的 scrollY 钳到新面板上 → 视觉上整页猛地移一大截
+      //       （实测：文章列表滚到 600px 时点【聊天】，scrollY 被钳到 2 → 内容整体向下猛移）
+      // 成因② 手机上返回文章面板会把桌面端顶部标题栏强制 display:block（多出 40px），把内容往下顶
+      const PANEL_SCROLL = {};
+      let curPanelId = "tags-panel";
+      function restorePanelScroll(panelId) {
+        const go = () => {
+          const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+          const y = Math.min(PANEL_SCROLL[panelId] || 0, max);
+          // html 上有 scroll-smooth：不加 behavior:"instant" 会看到一段平滑滚动动画
+          try { window.scrollTo({ top: y, left: 0, behavior: "instant" }); }
+          catch (_) { window.scrollTo(0, y); }
+        };
+        requestAnimationFrame(() => { go(); setTimeout(go, 0); }); // 再兜一次：等标签筛选重排完成
+      }
       function initSPA() {
         const isHome = window.location.pathname === "/" || window.location.pathname === "/index.html";
         document.querySelectorAll("aside a[href='/'], aside a[href='/tags/'], aside a[href='/about/'], aside a[href='/purchase/'], nav.sm\\:hidden a[href='/'], nav.sm\\:hidden a[href='/tags/'], nav.sm\\:hidden a[href='/about/'], nav.sm\\:hidden a[href='/purchase/']").forEach(link => {
@@ -202,6 +222,7 @@ const rssHref = getRelativeLocaleUrl(
             if (!isHome) return;
             e.preventDefault();
             const href = link.getAttribute("href");
+            PANEL_SCROLL[curPanelId] = Math.round(window.scrollY || 0); // 先记住当前面板滚到哪
             ["tags-panel","chat-panel","purchase-panel"].forEach(id => {
               const el = document.getElementById(id);
               if (el) el.style.display = "none";
@@ -210,15 +231,17 @@ const rssHref = getRelativeLocaleUrl(
             const panel = document.getElementById(panelId);
             if (panel) {
               panel.style.display = "block";
-              // 聊天面板隐藏顶部"焦羽.blog"标识，文章面板恢复
+              // 聊天/购买面板隐藏顶部"焦羽.blog"标识；文章面板只在电脑端恢复（手机上 Header 组件本来就隐藏它，强制 block 会把内容往下顶 40px）
               const headerEl = document.querySelector("header");
-              if (headerEl) headerEl.style.display = panelId === "tags-panel" ? "block" : "none";
+              if (headerEl) headerEl.style.display = (panelId === "tags-panel" && window.matchMedia("(min-width: 640px)").matches) ? "block" : "none";
               // 重新激活标签筛选
               if (panelId === "tags-panel") {
                 // 切回文章面板时恢复上次选中的标签（与 index.astro 的 lastTag 逻辑一致）
                 t==="tags-panel"&&setTimeout(()=>{let g=null;try{g=sessionStorage.getItem("lastTag")}catch(_){}document.querySelector('[data-tag="'+(g||"皮条往事")+'"]')?.click()},0)
               }
             }
+            curPanelId = panelId;
+            restorePanelScroll(panelId);
           });
         });
       }
