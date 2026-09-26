@@ -3,6 +3,8 @@
 const HALL = {
   wall: "https://chat.waiwei.top/posts",
   member: "https://chat.waiwei.top/member",
+  // 线路一 = 上海阿里云 IP 直连（大陆 0.1 秒级，2026-09-26 上线）；线路二 = 东京（原线路，兜底）
+  chat1: "https://139.224.1.54:9443/",
   chat: "https://chat.waiwei.top/",
 };
 ---
@@ -56,19 +58,36 @@ const HALL = {
       </div>
     </a>
 
-    <a
-      href={HALL.chat}
-      class="hall-card"
-      style="display:flex;flex-direction:column;justify-content:space-between;min-height:116px;padding:16px;border-radius:16px;background:#fff;border:1px solid #f0f0f0;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,0.04)"
-    >
-      <div style="display:flex;align-items:flex-start">
-        <span style="font-size:24px;line-height:1">💬</span>
-      </div>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:#111">私聊</div>
-        <div style="font-size:12px;color:#999;margin-top:3px">客服在线</div>
-      </div>
-    </a>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <a
+        href={HALL.chat1}
+        class="hall-card"
+        style="display:flex;flex-direction:column;justify-content:space-between;flex:1;padding:16px;border-radius:16px;background:#fff;border:1px solid #f0f0f0;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,0.04)"
+      >
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
+          <span style="font-size:24px;line-height:1">💬</span>
+          <span style="font-size:10.5px;color:#2563eb;font-weight:600;letter-spacing:0.3px;white-space:nowrap">国内推荐</span>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#111">线路一</div>
+          <div style="font-size:12px;color:#999;margin-top:3px">客服在线</div>
+        </div>
+      </a>
+
+      <a
+        href={HALL.chat}
+        class="hall-card"
+        style="display:flex;flex-direction:column;justify-content:space-between;flex:1;padding:16px;border-radius:16px;background:#fff;border:1px solid #f0f0f0;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,0.04)"
+      >
+        <div style="display:flex;align-items:flex-start">
+          <span style="font-size:24px;line-height:1">💬</span>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#111">线路二</div>
+          <div style="font-size:12px;color:#999;margin-top:3px">客服在线</div>
+        </div>
+      </a>
+    </div>
   </div>
 
   <!-- 安装到桌面（PWA）：绿色线条图标（去掉圆形绿底）+ 一行小字；用 margin:auto 落在中间偏下 -->
