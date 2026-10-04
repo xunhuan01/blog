@@ -7,6 +7,41 @@ const HALL = {
   chat1: "https://139.224.1.54:9443/",
   chat: "https://chat.waiwei.top/",
 };
+
+// 资源墙「最近更新」：构建时先抓一次接口，把最近 3 条直接写进 HTML（2026-10-04 用户要求：
+// 不论新访客/老访客/弱网都必须看到更新提示，让客户知道这个频道一直在更新）
+// 兜底：构建时抓不到（CF 构建机连不上 / 接口抖动）就用下面这份写死的快照，页面永远不为空
+const FALLBACK_UPDATES = [
+  { time: "2026-10-04T02:20:35.241Z", text: "178湖左岸 06学妹苏州🐝 🎬" },
+  { time: "2026-10-04T02:18:16.594Z", text: "苏州 🎬" },
+  { time: "2026-09-28T05:59:34.716Z", text: "厦门好闺闺短暂游玩🦜🐝 05/176E 真人 🎬" },
+];
+let wallUpdates = FALLBACK_UPDATES;
+try {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), 4000);
+  const res = await fetch("https://chat.waiwei.top/api/wall-updates", {
+    signal: ac.signal,
+    cache: "no-store",
+  });
+  clearTimeout(t);
+  if (res.ok) {
+    const data = await res.json();
+    if (data && Array.isArray(data.items) && data.items.length) {
+      wallUpdates = data.items.slice(0, 3);
+    }
+  }
+} catch (e) {
+  // 构建时抓不到 → 保持 FALLBACK_UPDATES
+}
+// 构建时用的日期（按北京时间，和访客看到的"最近更新 10月4日"口径一致）
+function fmtBeijing(iso: string) {
+  const d = new Date(iso);
+  if (!iso || isNaN(d.getTime())) return "";
+  const bj = new Date(d.getTime() + 8 * 3600 * 1000);
+  return bj.getUTCMonth() + 1 + "月" + bj.getUTCDate() + "日";
+}
+const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
 ---
 
 <div style="max-width:420px;margin:0 auto;padding-top:10px">
@@ -30,10 +65,19 @@ const HALL = {
     <div>
       <div style="font-size:22px;font-weight:800;color:#111;letter-spacing:0.5px">资源墙</div>
       <div style="font-size:13px;color:#5b6b82;margin-top:6px">定期分享各城市资源</div>
-      <!-- 最近更新：进页面拉一次 /api/wall-updates，最多显示 3 条摘要；拿不到数据整块不显示（2026-09-24） -->
-      <div id="wall-updates" style="display:none;margin-top:8px;font-size:11.5px;color:#5b6b82;line-height:1.55">
-        <div id="wall-updates-head" style="color:#2563eb;font-weight:600"></div>
-        <div id="wall-updates-list"></div>
+      <!-- 最近更新（2026-10-04 改）：构建时就把最近 3 条写进 HTML 且默认显示 —— 新访客/弱网也一定看得到；
+           下面那段 fetch 只当"刷新"用，拉不到就保持这 3 条，不再整块隐藏 -->
+      <div id="wall-updates" style="margin-top:8px;font-size:11.5px;color:#5b6b82;line-height:1.55">
+        <div id="wall-updates-head" style="color:#2563eb;font-weight:600">
+          ↻ 最近更新 {wallNewestLabel}
+        </div>
+        <div id="wall-updates-list">
+          {
+            wallUpdates.map((u) => (
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">· {u.text}</div>
+            ))
+          }
+        </div>
       </div>
       <div style="display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:13px;font-weight:600;color:#2563eb">
         进入<span style="font-size:14px">→</span>
@@ -134,8 +178,8 @@ const HALL = {
 </style>
 
 <script>
-  // 资源墙「最近更新」：进页面拉一次接口，显示最近 3 条摘要（2026-09-24）
-  // 拿不到数据 / 没有帖子 → 整块不显示，保持原样（不会出空框）
+  // 资源墙「最近更新」：页面里已经有构建时写死的最近 3 条（永远可见），
+  // 这里只是拉一次接口把它刷新成最新的（2026-10-04 改：拉不到就保持原样，绝不再整块隐藏）
   (function () {
     const API = "https://chat.waiwei.top/api/wall-updates";
     const wrap = document.getElementById("wall-updates");
