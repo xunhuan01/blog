@@ -1,13 +1,15 @@
 ---
 // 会员三档卡片（共用组件）：purchase.astro 独立页 与 首页 #purchase-panel 共用，改一处两边生效
-// 2026-09-21 第二次改版：间距放松、字号拉开层次（用户要求"中间再稀疏一点、字的大小有不同"）
+// 2026-10-04 第四次改版：用户选定「轻奢杂志感」方案（白卡 + 细边 + 细体黑价格 + 深灰实心按钮，去掉红色价格）
+// ⚠️ 文案一个字符都没动，只改样式；三张卡改为等高，「分隔线 + 按钮」贴卡底对齐
 const BUY_URL = "https://www.kuaifaka.net/purchasing?link=zXKgv3"; // 备用默认
 
 const tiers = [
   {
     id: "bronze",
     icon: "🖤",
-    iconHtml: '<svg viewBox="0 0 24 24" width="28" height="28"><rect x="10.6" y="3.5" width="2.8" height="3" rx="1.4" fill="#333"/><circle cx="12" cy="14.5" r="7.5" fill="#333"/><circle cx="12" cy="14.5" r="5.4" fill="none" stroke="#555" stroke-width="1"/><path d="M12 11.2l.85 1.72 1.9.28-1.38 1.34.33 1.9-1.7-.9-1.7.9.33-1.9-1.38-1.34 1.9-.28z" fill="#fff"/></svg>',
+    // 黑色奖章（浅底用）：深色圆 + 白色五角星
+    iconHtml: '<svg viewBox="0 0 24 24" width="24" height="24"><rect x="10.6" y="3.5" width="2.8" height="3" rx="1.4" fill="#333"/><circle cx="12" cy="14.5" r="7.5" fill="#333"/><circle cx="12" cy="14.5" r="5.4" fill="none" stroke="#555" stroke-width="1"/><path d="M12 11.2l.85 1.72 1.9.28-1.38 1.34.33 1.9-1.7-.9-1.7.9.33-1.9-1.38-1.34 1.9-.28z" fill="#fff"/></svg>',
     name: "青铜会员",
     level: "基础档",
     price: "¥199",
@@ -30,7 +32,7 @@ const tiers = [
     buyUrl: "https://m.kuaifaka.net/shop/Rlup63",
     benefits: [
       "含青铜会员全部权益",
-      "会费可抵后续安排的消费",
+      "会费可作为安排外围的定金",
     ],
     btnText: "开通黄金会员",
     highlight: false,
@@ -56,50 +58,138 @@ const tiers = [
 ---
 
 {tiers.map(tier => (
-  <div style={`background:#fff;border-radius:16px;padding:20px;margin-bottom:8px;box-shadow:0 2px 12px rgba(0,0,0,0.05);border:1px solid #f0f0f0;`}>
-    {/* 第一层：图标 + 档名 …… 价格（价格用最大字号，方便竖着比价） */}
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:26px;line-height:1;display:flex">{tier.iconHtml ? <span set:html={tier.iconHtml} /> : tier.icon}</span>
-        <div style="font-size:17px;font-weight:700;color:#222">{tier.name}</div>
+  <div class="tier-card">
+    {/* 第一层：图标 + 档名 …… 价格 */}
+    <div class="tier-head">
+      <div class="tier-name">
+        <span class="tier-ico">{tier.iconHtml ? <span set:html={tier.iconHtml} /> : tier.icon}</span>
+        {tier.name}
       </div>
-      <div style="font-size:26px;font-weight:800;color:#e74c3c;letter-spacing:-0.5px">{tier.price}</div>
+      <div class="tier-price"><span class="cur">¥</span>{tier.price.replace("¥", "")}</div>
     </div>
 
-    {/* 第二层：权益（13px 小字，行距放松） */}
-    <ul style="list-style:none;margin:16px 0 0;padding:0">
+    {/* 第二层：权益 */}
+    <ul class="tier-list">
       {tier.benefits.map(b => (
-        <li style="font-size:13px;color:#666;line-height:1.95;padding-left:2px">
-          <span style="color:#22c55e;margin-right:7px">✓</span>{b}
-        </li>
+        <li><span class="ck">✓</span>{b}</li>
       ))}
     </ul>
 
-    {/* 第三层：按钮（上方一条极淡的分隔线，层次更清楚）
-        2026-09-21：页面标题「👑 会员购买」已按用户要求删除，卡片整体上提；
-        钻石档改为——按钮=「服务介绍」（跳 /通往性自由之路），客服微信那句话挪到按钮下方的备注行 */}
-    <div style="border-top:1px solid #f4f4f4;margin-top:16px;padding-top:14px">
+    {/* 第三层：按钮（贴卡底 → 三张卡的按钮落在同一水平线）
+        2026-09-21：页面标题已删；钻石档按钮=「服务介绍」跳 /通往性自由之路，客服微信挪到按钮下方 */}
+    <div class="tier-foot">
       {tier.buyText ? (
         <>
-          <a
-            href="/通往性自由之路"
-            style={`display:block;text-align:center;padding:13px;border-radius:12px;font-size:15px;font-weight:600;background:#555;color:#fff;text-decoration:none;cursor:pointer;`}
-          >
-            {tier.linkText || "服务介绍"}
-          </a>
-          <div style="text-align:center;font-size:12px;color:#999;margin-top:9px;line-height:1.6">{tier.buyText}</div>
-          {tier.buyNote && (
-            <div style="text-align:center;font-size:11px;color:#bbb;margin-top:3px">{tier.buyNote}</div>
-          )}
+          <a class="tier-btn" href="/通往性自由之路">{tier.linkText || "服务介绍"}</a>
+          <div class="tier-note">{tier.buyText}</div>
+          {tier.buyNote && <div class="tier-note2">{tier.buyNote}</div>}
         </>
       ) : (
-        <a
-          href={tier.buyUrl || BUY_URL}
-          style={`display:block;text-align:center;padding:13px;border-radius:12px;text-decoration:none;font-size:15px;font-weight:600;background:#555;color:#fff;`}
-        >
-          {tier.btnText}
-        </a>
+        <a class="tier-btn" href={tier.buyUrl || BUY_URL}>{tier.btnText}</a>
       )}
     </div>
   </div>
 ))}
+
+<style>
+  /* 轻奢杂志感（2026-10-04 用户选定的方案 A）：白卡 + 暖色细边 + 细体黑价格（去红）+ 深灰实心按钮 */
+  .tier-card {
+    background: #fff;
+    border: 1px solid #efece6;
+    border-radius: 18px;
+    padding: 15px 16px 11px;
+    margin-bottom: 7px;
+    display: flex;
+    flex-direction: column;
+    min-height: 188px; /* 三卡等高：内容少的卡靠这里补齐（青铜/黄金对齐），按钮贴卡底 */
+    box-shadow:
+      0 1px 3px rgba(60, 50, 30, 0.04),
+      0 10px 30px rgba(60, 50, 30, 0.05);
+  }
+  .tier-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .tier-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #232323;
+  }
+  .tier-ico {
+    display: flex;
+    font-size: 22px;
+    line-height: 1;
+  }
+  .tier-price {
+    font-size: 22px;
+    font-weight: 300;
+    color: #1a1a1a;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tier-price .cur {
+    font-size: 13px;
+    color: #999;
+    margin-right: 1px;
+  }
+  .tier-list {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+  }
+  .tier-list li {
+    font-size: 12.5px;
+    color: #555;
+    line-height: 1.55;
+    padding-left: 2px;
+  }
+  .tier-list .ck {
+    color: #b0976a;
+    font-size: 11px;
+    margin-right: 6px;
+  }
+  .tier-foot {
+    margin-top: auto; /* 顶到卡底 → 按钮落在卡底同一位置 */
+    padding-top: 7px;
+  }
+  .tier-foot::before {
+    content: "";
+    display: block;
+    height: 1px;
+    background: #f0ece4;
+    margin-bottom: 6px;
+  }
+  .tier-btn {
+    display: block;
+    text-align: center;
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    background: #2b2b2b;
+    color: #fff;
+    text-decoration: none;
+  }
+  .tier-btn:active {
+    background: #111;
+    transform: scale(0.985);
+  }
+  .tier-note {
+    text-align: center;
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+    line-height: 1.45;
+  }
+  .tier-note2 {
+    text-align: center;
+    font-size: 10px;
+    color: #bbb;
+    margin-top: 0;
+  }
+</style>
