@@ -44,8 +44,6 @@ const tiers = [
     name: "钻石会员",
     level: "顶配档",
     price: "¥6999",
-    buyText: "购买请联系客服微信：xunhuan314",
-    buyNote: "备注：自由之路",
     linkText: "服务介绍",
     benefits: [
       "含黄金会员全部权益",
@@ -76,14 +74,12 @@ const tiers = [
     </ul>
 
     {/* 第三层：按钮（贴卡底 → 三张卡的按钮落在同一水平线）
-        2026-09-21：页面标题已删；钻石档按钮=「服务介绍」跳 /通往性自由之路，客服微信挪到按钮下方 */}
+        2026-09-21：页面标题已删；钻石档按钮=「服务介绍」跳 /通往性自由之路
+        2026-10-07：钻石档的客服微信行 + 备注行已按用户要求删除（不再留任何联系方式）；
+                    按钮改由 linkText 控制显隐 */}
     <div class="tier-foot">
-      {tier.buyText ? (
-        <>
-          <a class="tier-btn" href="/通往性自由之路">{tier.linkText || "服务介绍"}</a>
-          <div class="tier-note">{tier.buyText}</div>
-          {tier.buyNote && <div class="tier-note2">{tier.buyNote}</div>}
-        </>
+      {tier.linkText ? (
+        <a class="tier-btn" href="/通往性自由之路">{tier.linkText || "服务介绍"}</a>
       ) : (
         <a class="tier-btn" href={tier.buyUrl || BUY_URL}>{tier.btnText}</a>
       )}
