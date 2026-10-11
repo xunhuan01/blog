@@ -1,6 +1,8 @@
 ---
 // 会员三档卡片（共用组件）：purchase.astro 独立页 与 首页 #purchase-panel 共用，改一处两边生效
-// 2026-10-04 第四次改版：用户选定「轻奢杂志感」方案（白卡 + 细边 + 细体黑价格 + 深灰实心按钮，去掉红色价格）
+// 2026-10-04 第四次改版：用户选定「轻奢杂志感」方案（白卡 + 细边 + 细体黑价格，去掉红色价格）
+// 2026-10-11 第五次改版（用户指定）：按钮换「细金线」（同资源墙解锁弹层那套）——青铜/黄金=纯金线白底，
+//            仅钻石档「服务介绍」保留极淡金渐变；按下由「变深+缩放」改为「底色淡淡加深」
 // ⚠️ 文案一个字符都没动，只改样式；三张卡改为等高，「分隔线 + 按钮」贴卡底对齐
 const BUY_URL = "https://www.kuaifaka.net/purchasing?link=zXKgv3"; // 备用默认
 
@@ -79,7 +81,7 @@ const tiers = [
                     按钮改由 linkText 控制显隐 */}
     <div class="tier-foot">
       {tier.linkText ? (
-        <a class="tier-btn" href="/通往性自由之路">{tier.linkText || "服务介绍"}</a>
+        <a class="tier-btn tier-btn-grad" href="/通往性自由之路">{tier.linkText || "服务介绍"}</a>
       ) : (
         <a class="tier-btn" href={tier.buyUrl || BUY_URL}>{tier.btnText}</a>
       )}
@@ -159,6 +161,7 @@ const tiers = [
     background: #f0ece4;
     margin-bottom: 6px;
   }
+  /* 细金线按钮（与资源墙解锁弹层的「购买入口」同一套色） */
   .tier-btn {
     display: block;
     text-align: center;
@@ -167,13 +170,22 @@ const tiers = [
     font-size: 13.5px;
     font-weight: 600;
     letter-spacing: 2px;
-    background: #2b2b2b;
-    color: #fff;
+    color: #9a7a26;
+    background: #fff;
+    border: 1px solid #ddcba0;
     text-decoration: none;
   }
+  /* 只有钻石档「服务介绍」带极淡金渐变（用户 2026-10-11 指定） */
+  .tier-btn.tier-btn-grad {
+    border-color: #e4cf9c;
+    background: linear-gradient(180deg, #fffdf7, #fbf4e2);
+  }
+  /* 细线按钮按下：底色淡淡加深（不再变深+缩放，避免细线抖动） */
   .tier-btn:active {
-    background: #111;
-    transform: scale(0.985);
+    background: #f8f4ea;
+  }
+  .tier-btn.tier-btn-grad:active {
+    background: linear-gradient(180deg, #fdf8ec, #f6ecd4);
   }
   .tier-note {
     text-align: center;

@@ -17,6 +17,28 @@ const FALLBACK_UPDATES = [
   { time: "2026-09-28T05:59:34.716Z", text: "厦门好闺闺短暂游玩🦜🐝 05/176E 真人 🎬" },
 ];
 let wallUpdates = FALLBACK_UPDATES;
+
+// 会员群活跃提示（2026-10-11 用户要求）：卡片上直接显示「X 小时前有人发言」，
+// 一个字的聊天内容都不露。构建时先抓一次拿到时间戳写进 HTML（data-ts），
+// 页面打开时由脚本换算成「X 小时前」并刷新一次接口 —— 所以这个时间永远是准的。
+let memberActTs = 0;
+try {
+  const acM = new AbortController();
+  const tM = setTimeout(() => acM.abort(), 4000);
+  const resM = await fetch("https://chat.waiwei.top/api/member-preview", {
+    signal: acM.signal,
+    cache: "no-store",
+  });
+  clearTimeout(tM);
+  if (resM.ok) {
+    const dM = await resM.json();
+    if (dM && dM.lastTime) memberActTs = Number(dM.lastTime) || 0;
+    // 兼容旧结构（服务端未更新的那几天仍回 {items:[{time}]}）
+    else if (dM && Array.isArray(dM.items) && dM.items.length) memberActTs = Number(dM.items[0].time) || 0;
+  }
+} catch (e) {
+  // 抓不到就不显示时间（卡片上仍留「· 有人发言」）
+}
 try {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 4000);
@@ -34,6 +56,18 @@ try {
 } catch (e) {
   // 构建时抓不到 → 保持 FALLBACK_UPDATES
 }
+// 会员群活跃提示的构建时文案（页面打开后由脚本按当前时刻刷新，所以永远准；
+// 这样即使脚本还没跑/被禁用，卡片上也是有时间的，不会只剩「· 有人发言」）
+function fmtAgoBuild(ts: number) {
+  if (!ts) return "";
+  const diff = Math.max(0, (Date.now() - ts) / 1000);
+  if (diff < 60) return "刚刚";
+  if (diff < 3600) return Math.floor(diff / 60) + "分钟前";
+  if (diff < 86400) return Math.floor(diff / 3600) + "小时前";
+  return Math.floor(diff / 86400) + "天前";
+}
+const memberActLabel = fmtAgoBuild(memberActTs);
+
 // 构建时用的日期（按北京时间，和访客看到的"最近更新 10月4日"口径一致）
 function fmtBeijing(iso: string) {
   const d = new Date(iso);
@@ -92,13 +126,21 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
       class="hall-card"
       style="display:flex;flex-direction:column;justify-content:space-between;min-height:116px;padding:16px;border-radius:16px;background:#fff;border:1px solid #f0f0f0;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,0.04)"
     >
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:24px;line-height:1">👑</span>
-        <span style="font-size:10px;color:#fff;background:#fa5151;border-radius:4px;padding:1px 5px">会员</span>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:24px;line-height:1">👑</span>
+          <span style="font-size:10px;color:#fff;background:#fa5151;border-radius:4px;padding:1px 5px">会员</span>
+        </div>
+        <!-- 活跃提示（2026-10-11 用户定稿）：皇冠下方两行显示 =
+             第一行「· X 小时前」/ 第二行「有人发言」，不含任何聊天内容；
+             时间由下面脚本按当前时刻刷新；拿不到数据就退回原来的「同好交流」 -->
+        <div id="member-act" data-ts={memberActTs || ""} style="font-size:12px;color:#2563eb;margin-top:7px;line-height:1.45">
+          <div id="member-act-time">{memberActLabel ? "· " + memberActLabel : ""}</div>
+          <div id="member-act-text">{memberActLabel ? "有人发言" : "同好交流"}</div>
+        </div>
       </div>
       <div>
         <div style="font-size:15px;font-weight:700;color:#111">会员群</div>
-        <div style="font-size:12px;color:#999;margin-top:3px">同好交流</div>
       </div>
     </a>
 
@@ -226,6 +268,36 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
         wrap.style.display = "block";
       })
       .catch(() => {});   // 接口挂了就静默保持原样
+  })();
+
+  // 会员群活跃提示（2026-10-11）：卡片上显示「X 小时前有人发言」，不含任何内容
+  (function () {
+    const el = document.getElementById("member-act");
+    if (!el) return;
+    function fmtAgo(ts) {
+      if (!ts || isNaN(ts)) return "";
+      const diff = Math.max(0, (Date.now() - ts) / 1000);
+      if (diff < 60) return "刚刚";
+      if (diff < 3600) return Math.floor(diff / 60) + "分钟前";
+      if (diff < 86400) return Math.floor(diff / 3600) + "小时前";
+      return Math.floor(diff / 86400) + "天前";
+    }
+    function paint(ts) {
+      const label = fmtAgo(ts);
+      const tEl = document.getElementById("member-act-time");
+      const xEl = document.getElementById("member-act-text");
+      if (!tEl || !xEl) return;
+      tEl.textContent = label ? "· " + label : "";        // 第一行：点 + 时间
+      xEl.textContent = label ? "有人发言" : "同好交流";   // 第二行；拿不到数据就退回原副标题
+    }
+    paint(Number(el.dataset.ts));
+    fetch("https://chat.waiwei.top/api/member-preview", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (d && d.lastTime) paint(Number(d.lastTime));
+        else if (d && Array.isArray(d.items) && d.items.length) paint(Number(d.items[0].time));   // 兼容旧结构
+      })
+      .catch(function () {});
   })();
 
   // PWA 安装按钮逻辑
