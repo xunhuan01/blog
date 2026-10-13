@@ -165,29 +165,35 @@ const ogImage = ogImageUrl
           </div>
 
           <!-- 标题 -->
-          <p class="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">此文章需要密码</p>
-          <p class="text-xs text-neutral-400 dark:text-neutral-500 mb-6">请输入密码后继续阅读</p>
+          <p class="mb-6 text-sm font-medium text-neutral-700 dark:text-neutral-300">此文章需要密码</p>
 
-          <!-- 输入框 -->
-          <div class="relative mb-4">
+          <!-- 输入框 + 确认按钮同一行（2026-10-13 用户要求：确认键做成小按钮放输入框右边，更精简） -->
+          <div class="mb-4 flex items-stretch gap-2">
             <input
               id="password-input"
               type="password"
               placeholder="输入密码"
-              class="w-full h-11 px-4 text-sm text-neutral-800 dark:text-neutral-200 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl outline-none transition-all duration-200 placeholder:text-neutral-400 focus:border-neutral-400 dark:focus:border-neutral-500 focus:ring-0"
+              class="h-11 min-w-0 flex-1 px-4 text-sm text-neutral-800 dark:text-neutral-200 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl outline-none transition-all duration-200 placeholder:text-neutral-400 focus:border-neutral-400 dark:focus:border-neutral-500 focus:ring-0"
             />
+            <button
+              id="password-submit"
+              class="h-11 flex-none rounded-xl bg-neutral-900 px-4 text-[13px] font-medium tracking-wide text-white transition-all duration-150 hover:bg-neutral-800 active:scale-[0.98] dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200"
+            >
+              确认
+            </button>
           </div>
-
-          <!-- 确认按钮 -->
-          <button
-            id="password-submit"
-            class="w-full h-11 rounded-xl bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 text-sm font-medium tracking-wide hover:bg-neutral-800 dark:hover:bg-neutral-200 active:scale-[0.98] transition-all duration-150"
-          >
-            确认密码
-          </button>
 
           <!-- 错误提示 -->
           <p id="password-error" class="mt-3 text-xs text-red-500 dark:text-red-400 hidden">密码错误，请重试</p>
+
+          <!-- 会员购买入口（2026-10-13）：细金线按钮，同资源墙解锁弹层的「购买入口」同款色；点开直接到卡密购买页 -->
+          <div class="mt-6 border-t border-neutral-200 pt-4 dark:border-neutral-700">
+            <a
+              href="https://w.kami.vip/s/4eQNQ28G"
+              class="flex h-10 w-full items-center justify-center rounded-lg text-[13.5px] tracking-wide no-underline"
+              style="color:#9a7a26;border:1px solid #e4cf9c;background:linear-gradient(180deg,#fffdf7,#fbf4e2)"
+            >购买会员 · ¥199 起</a>
+          </div>
         </div>
       </div>
     )}
