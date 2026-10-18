@@ -248,9 +248,17 @@ const rssHref = getRelativeLocaleUrl(
             const panel = document.getElementById(panelId);
             if (panel) {
               panel.style.display = "block";
-              // 聊天/购买面板隐藏顶部"焦羽.blog"标识；文章面板只在电脑端恢复（手机上 Header 组件本来就隐藏它，强制 block 会把内容往下顶 40px）
+              // 2026-10-19 修线上 bug（切一圈底栏回文章面板后顶栏消失、第一条被吸顶标签栏压住）：
+              // 原来是 (panelId==="tags-panel" && 宽度>=640) ? "block" : "none" —— 手机端永远写 "none"，
+              // 而且切回文章面板也不恢复 → 顶栏永久消失；而手机端标签栏是 sticky top:57px（按有顶栏算的），
+              // 顶栏一没，内容顶上去、标签栏还钉在 57px，正好压住第一个标题。
+              // 现在切回文章面板时**清掉内联样式**交给 CSS（redesign.css 手机端已把 header 设成 display:block），
+              // 聊天/购买面板仍旧隐藏顶栏，保持 2026-09-06 定的观感。
               const headerEl = document.querySelector("header");
-              if (headerEl) headerEl.style.display = (panelId === "tags-panel" && window.matchMedia("(min-width: 640px)").matches) ? "block" : "none";
+              if (headerEl) {
+                if (panelId === "tags-panel") headerEl.style.removeProperty("display");
+                else headerEl.style.display = "none";
+              }
               // 重新激活标签筛选
               if (panelId === "tags-panel") {
                 // 切回文章面板时恢复上次选中的标签（与 index.astro 的 lastTag 逻辑一致）
