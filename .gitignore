@@ -1,4 +1,4 @@
-# build output
+﻿# build output
 dist/
 
 # generated types
@@ -31,3 +31,9 @@ public/pagefind
 
 # docker compose
 compose.override.yaml
+
+# 2026-10-18：本地 npm 缓存目录，不该进仓库
+npm-cache/
+
+# 2026-10-18：图片压缩前的备份，不进仓库
+.image-backup-20261018/

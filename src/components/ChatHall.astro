@@ -39,22 +39,59 @@ try {
 } catch (e) {
   // 抓不到就不显示时间（卡片上仍留「· 有人发言」）
 }
+// 「最近更新」文字钩子（2026-10-18 用户要求：上锁帖也要能预览出前两行）。
+// 说明：/api/wall-updates 目前对上锁帖只回「🔒 会员内容 📷」，等于钩子失效；
+// 而资源墙自己在用的 /api/posts 会对所有访客下发「前两行预览」（postPreviewText，
+// 2026-10-11 定的口径，资源墙当天起就免密码了）。两边口径不一致 → 这里改走 /api/posts。
+// 拿不到就退回 /api/wall-updates，再拿不到就用内置快照 FALLBACK_UPDATES。
+function hookText(p: any) {
+  const raw = String((p && p.text) || "");
+  const media = Array.isArray(p && p.media) ? p.media : [];
+  const video = media.some((m: any) => m && m.type === "video") || !!(p && p.video);
+  const img = media.some((m: any) => m && m.type === "image") || !!(p && p.image);
+  const hasMedia = video || img || !!(p && p.hasMedia);
+  // 空行不算行，最多两行；行内多空格压平
+  const t = raw
+    .split("\n")
+    .map((s: string) => s.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("\n");
+  // 2026-10-18 用户要求：只有图/视频、没写正文的帖子，外面就显示「会员专享」四个字
+  if (!t) return "会员专享";
+  return video ? t + " 🎬" : hasMedia ? t + " 📷" : t;
+}
 try {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 4000);
-  const res = await fetch("https://chat.waiwei.top/api/wall-updates", {
+  const res = await fetch("https://chat.waiwei.top/api/posts", {
     signal: ac.signal,
     cache: "no-store",
   });
   clearTimeout(t);
   if (res.ok) {
     const data = await res.json();
-    if (data && Array.isArray(data.items) && data.items.length) {
-      wallUpdates = data.items.slice(0, 3);
+    const arr = Array.isArray(data) ? data : data && Array.isArray(data.items) ? data.items : [];
+    if (arr.length) {
+      wallUpdates = arr.slice(0, 3).map((p: any) => ({ time: p && p.time, text: hookText(p) }));
     }
   }
 } catch (e) {
-  // 构建时抓不到 → 保持 FALLBACK_UPDATES
+  try {
+    const ac2 = new AbortController();
+    const t2 = setTimeout(() => ac2.abort(), 4000);
+    const res2 = await fetch("https://chat.waiwei.top/api/wall-updates", {
+      signal: ac2.signal,
+      cache: "no-store",
+    });
+    clearTimeout(t2);
+    if (res2.ok) {
+      const d2 = await res2.json();
+      if (d2 && Array.isArray(d2.items) && d2.items.length) wallUpdates = d2.items.slice(0, 3);
+    }
+  } catch (e2) {
+    // 两次都抓不到 → 保持 FALLBACK_UPDATES
+  }
 }
 // 会员群活跃提示的构建时文案（页面打开后由脚本按当前时刻刷新，所以永远准；
 // 这样即使脚本还没跑/被禁用，卡片上也是有时间的，不会只剩「· 有人发言」）
@@ -78,143 +115,337 @@ function fmtBeijing(iso: string) {
 const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
 ---
 
-<div style="max-width:420px;margin:0 auto;padding-top:10px">
+  <div class="hall">
 
-  <!-- 内容组：三块内容贴顶排列；「安装到桌面」用 margin-top:auto 推到下方（2026-09-21 用户要求：删掉顶部"聊天"标题、三块上移、安装图标下移） -->
-  <div style="display:flex;flex-direction:column;min-height:calc(100vh - 120px);min-height:calc(100svh - 120px)">
-
-  <!-- 资源墙：大卡片（高度约 1/3 屏；33svh 优先——svh 不随手机地址栏/微信工具栏收放变化，避免切面板时整页抖动） -->
-  <a
-    href={HALL.wall}
-    class="hall-card"
-    style="display:flex;flex-direction:column;justify-content:space-between;height:33vh;height:33svh;min-height:236px;max-height:290px;margin-top:12px;padding:20px;border-radius:18px;background:linear-gradient(150deg,#eef4ff 0%,#e2ecff 100%);border:1px solid #d8e5ff;text-decoration:none;box-shadow:0 4px 16px rgba(37,99,235,0.08)"
-  >
-    <div style="display:flex;align-items:flex-start;justify-content:space-between">
-      <span style="font-size:30px;line-height:1">📢</span>
-      <span style="display:inline-flex;align-items:center;gap:4px">
-        <span id="wall-new-chip" style="display:none;font-size:10px;color:#fff;background:#2563eb;border-radius:4px;padding:2px 6px"></span>
-        <span style="font-size:10px;color:#fff;background:#fa5151;border-radius:4px;padding:2px 6px">会员</span>
-      </span>
-    </div>
-    <div>
-      <div style="font-size:22px;font-weight:800;color:#111;letter-spacing:0.5px">资源墙</div>
-      <div style="font-size:13px;color:#5b6b82;margin-top:6px">定期分享各城市资源</div>
-      <!-- 最近更新（2026-10-04 改）：构建时就把最近 3 条写进 HTML 且默认显示 —— 新访客/弱网也一定看得到；
-           下面那段 fetch 只当"刷新"用，拉不到就保持这 3 条，不再整块隐藏 -->
-      <div id="wall-updates" style="margin-top:8px;font-size:11.5px;color:#5b6b82;line-height:1.55">
-        <div id="wall-updates-head" style="color:#2563eb;font-weight:600">
-          ↻ 最近更新 {wallNewestLabel}
-        </div>
-        <div id="wall-updates-list">
-          {
-            wallUpdates.map((u) => (
-              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">· {u.text}</div>
-            ))
-          }
-        </div>
+    <!-- 资源墙：深墨主卡（素雅体系里唯一的深色锚点） -->
+    <a href={HALL.wall} class="hall-wall">
+      <div class="hall-wall__top">
+        <span class="hall-icw">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+        </span>
+        <span class="hall-badges">
+          <span id="wall-new-chip" style="display:none" class="hall-chip-new"></span>
+          <span class="hall-chip-mem">会员</span>
+        </span>
       </div>
-      <div style="display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:13px;font-weight:600;color:#2563eb">
-        进入<span style="font-size:14px">→</span>
-      </div>
-    </div>
-  </a>
 
-  <!-- 会员群 / 私聊：并排两张小卡 -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
-    <a
-      href={HALL.member}
-      class="hall-card"
-      style="display:flex;flex-direction:column;justify-content:space-between;min-height:116px;padding:16px;border-radius:16px;background:#fff;border:1px solid #f0f0f0;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,0.04)"
-    >
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:24px;line-height:1">👑</span>
-          <span style="font-size:10px;color:#fff;background:#fa5151;border-radius:4px;padding:1px 5px">会员</span>
+        <h2 class="hall-wall__title">资源墙</h2>
+        <div class="hall-wall__dsc">定期分享各城市资源</div>
+
+        <!-- 更新区：构建时已写死最近 3 条（弱网也可见），页面打开后由脚本刷新 -->
+        <div class="hall-upd" id="wall-updates">
+          <div class="hall-upd__head" id="wall-updates-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 4 21 9 16 9"/></svg>
+            最近更新 {wallNewestLabel}
+          </div>
+          <div id="wall-updates-list">
+            {
+              wallUpdates.map(u => (
+                <div class="hall-upd__row">
+                  <span class="hall-upd__e">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                  </span>
+                  <span class="hall-upd__tx">{u.text}</span>
+                </div>
+              ))
+            }
+          </div>
         </div>
-        <!-- 活跃提示（2026-10-11 用户定稿）：皇冠下方两行显示 =
-             第一行「· X 小时前」/ 第二行「有人发言」，不含任何聊天内容；
-             时间由下面脚本按当前时刻刷新；拿不到数据就退回原来的「同好交流」 -->
-        <div id="member-act" data-ts={memberActTs || ""} style="font-size:12px;color:#2563eb;margin-top:7px;line-height:1.45">
-          <div id="member-act-time">{memberActLabel ? "· " + memberActLabel : ""}</div>
-          <div id="member-act-text">{memberActLabel ? "有人发言" : "同好交流"}</div>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:15px;font-weight:700;color:#111">会员群</div>
       </div>
     </a>
 
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <a
-        href={HALL.chat1}
-        class="hall-card"
-        style="display:flex;flex-direction:column;justify-content:space-between;flex:1;padding:16px;border-radius:16px;background:#fff;border:1px solid #f0f0f0;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,0.04)"
-      >
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
-          <span style="font-size:24px;line-height:1">💬</span>
-          <span style="font-size:10.5px;color:#2563eb;font-weight:600;letter-spacing:0.3px;white-space:nowrap">国内推荐</span>
+    <!-- 会员群 / 线路一：两个方格并排（线路二按用户要求隐藏） -->
+    <div class="hall-cells">
+      <a href={HALL.member} class="hall-cell">
+        <div class="hall-cell__top">
+          <span class="hall-icw hall-icw--sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 5-7 5 7 4-4v9H3V8z"/></svg>
+          </span>
+          <span class="hall-chip-mem hall-chip-mem--lit">会员</span>
         </div>
-        <div>
-          <div style="font-size:15px;font-weight:700;color:#111">线路一</div>
-          <div style="font-size:12px;color:#999;margin-top:3px">客服在线</div>
+        <!-- 2026-10-18：名字移到图标下面（原来靠 margin-top:auto 沉到卡片最底，与线路一/资源墙不一致） -->
+        <div class="hall-cell__nm">会员群</div>
+        <div class="hall-cell__act" id="member-act" data-ts={memberActTs || ""}>
+          <div id="member-act-time">{memberActLabel ? "· " + memberActLabel : ""}</div>
+          <div id="member-act-text">{memberActLabel ? "有人发言" : "同好交流"}</div>
         </div>
       </a>
 
-      <a
-        href={HALL.chat}
-        class="hall-card"
-        style="display:flex;flex-direction:column;justify-content:space-between;flex:1;padding:16px;border-radius:16px;background:#fff;border:1px solid #f0f0f0;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,0.04)"
-      >
-        <div style="display:flex;align-items:flex-start">
-          <span style="font-size:24px;line-height:1">💬</span>
+      <a href={HALL.chat1} class="hall-cell">
+        <div class="hall-cell__top">
+          <span class="hall-icw hall-icw--sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-3.7-.7L3 21l1.7-4.6A8.4 8.4 0 0 1 3.6 11.5 8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+          </span>
         </div>
-        <div>
-          <div style="font-size:15px;font-weight:700;color:#111">线路二</div>
-          <div style="font-size:12px;color:#999;margin-top:3px">客服在线</div>
-        </div>
+        <div class="hall-cell__nm">线路一</div>
+        <div class="hall-cell__sub">客服在线</div>
       </a>
     </div>
-  </div>
 
-  <!-- 安装到桌面（PWA）：绿色线条图标（去掉圆形绿底）+ 一行小字；桌面端用 margin:auto 落在中间偏下，
-       手机端由样式表钉死在底部三栏正上方（margin 不能写在这里，否则行内样式会盖掉样式表，2026-09-26） -->
-  <div id="install-wrap" style="display:flex;flex-direction:column;align-items:center;gap:8px">
-    <button id="install-btn" title="安装到桌面" style="background:none;border:none;padding:0;cursor:pointer;color:#07c160;display:flex;align-items:center;justify-content:center;transition:transform 0.15s">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    </button>
-    <span style="font-size:11px;color:#999;letter-spacing:0.5px">安装到桌面</span>
-  </div>
+    <!-- 安装到桌面（PWA）：居中一行，不再 fixed 钉在底部 -->
+    <div id="install-wrap" class="hall-install">
+      <button id="install-btn" title="安装到桌面" class="hall-install__btn">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+      <span class="hall-install__lb">安装到桌面</span>
+    </div>
 
   </div>
-</div>
 
 <style>
-  /* 轻微上浮，别那么死板（手机无 hover，桌面才有反馈） */
-  .hall-card {
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
-  }
-  .hall-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.1);
-  }
-
-  /* 桌面端：沿用原来的「中间偏下」（原来写在行内 margin 上，见 2026-09-26 说明） */
-  #install-wrap {
-    margin: auto auto 10vh;
-    margin: auto auto 10svh;
+  /* 聊天页（2026-10-18）：素雅黑白灰 ＋ 唯一的深色锚点（资源墙主卡）
+     层次靠明度分层：深卡 → 白卡 → 纸底 */
+  .hall {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 18px 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
-  /* 手机端：「安装到桌面」钉死在底部三栏【聊天】按钮正上方（2026-09-26 用户指定）
-     用 fixed 是为了跟屏幕尺寸解耦 —— 任何手机上到屏幕底边的距离都一样。
-     底部导航高约 55px（py-2 + 图标 + 文字），这里留 7px 缝。 */
-  @media (max-width: 639px) {
-    #install-wrap {
-      position: fixed;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: calc(55px + 7px);
-      margin: 0;
-      z-index: 45; /* 低于底部导航(z-50)，高于正文内容 */
+  /* ── 资源墙主卡 ── */
+  .hall-wall {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 20px;
+    border-radius: 20px;
+    background: #1c1c1b;
+    text-decoration: none;
+    box-shadow:
+      0 2px 6px rgba(25, 25, 25, 0.1),
+      0 16px 34px rgba(25, 25, 25, 0.2);
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  .hall-wall:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 4px 8px rgba(25, 25, 25, 0.12),
+      0 18px 40px rgba(25, 25, 25, 0.24);
+  }
+  .hall-wall__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .hall-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .hall-icw {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    color: #f2f2f0;
+  }
+  .hall-icw svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+  }
+  .hall-icw--sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: #f1f1ef;
+    color: #3a3a38;
+  }
+  .hall-icw--sm svg {
+    width: 19px;
+    height: 19px;
+  }
+  .hall-chip-mem {
+    font-size: 10.5px;
+    line-height: 1;
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(205, 184, 135, 0.34);
+    background: rgba(205, 184, 135, 0.1);
+    color: #cdb887;
+    white-space: nowrap;
+  }
+  .hall-chip-mem--lit {
+    border-color: #ded6c6;
+    background: #faf8f4;
+    color: #8a7a5e;
+  }
+  .hall-chip-new {
+    font-size: 10px;
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: #2563eb;
+    color: #fff;
+  }
+  .hall-wall__title {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #fff;
+  }
+  .hall-wall__dsc {
+    margin-top: 4px;
+    font-size: 12.5px;
+    color: #9a9a97;
+  }
+
+  /* 更新区（诱饵区，不许删） */
+  .hall-upd {
+    margin-top: 15px;
+    padding: 12px 13px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.07);
+  }
+  .hall-upd__head {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    color: #c6b083;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  .hall-upd__head svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+  .hall-upd__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 12.5px;
+    color: #e8e8e6;
+  }
+  .hall-upd__e {
+    display: flex;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: #a5a5a2;
+  }
+  .hall-upd__e svg {
+    width: 14px;
+    height: 14px;
+  }
+  /* 2026-10-18：钩子从「一行截断」改成「前两行」——后端 /api/wall-updates 会带 \n 下发
+     与资源墙 /api/posts 同口径的前两行预览（上锁帖不再只剩「🔒 会员内容」） */
+  .hall-upd__tx {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.55;
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ── 两个方格 ── */
+  .hall-cells {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .hall-cell {
+    display: flex;
+    flex-direction: column;
+    min-height: 132px;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid #e3e3e0;
+    border-radius: 20px;
+    text-decoration: none;
+    box-shadow:
+      0 1px 2px rgba(25, 25, 25, 0.04),
+      0 8px 22px rgba(25, 25, 25, 0.07);
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  .hall-cell:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 2px 4px rgba(25, 25, 25, 0.05),
+      0 12px 26px rgba(25, 25, 25, 0.09);
+  }
+  .hall-cell__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .hall-cell__act {
+    margin-top: auto;   /* 2026-10-18：活跃提示沉到卡底（原来靠名字的 auto 上边距，导致名字落底） */
+    padding-top: 8px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #8a6a1f;
+  }
+  .hall-cell__nm {
+    margin-top: 6px;    /* 2026-10-18：名字紧跟图标块，三张卡一致（原来 margin-top:auto 沉底） */
+    padding-top: 0;
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #191919;
+  }
+  .hall-cell__sub {
+    margin-top: auto;   /* 2026-10-18：副标题同样沉底，让名字与会员群卡对齐 */
+    padding-top: 4px;
+    font-size: 11.5px;
+    color: #8f8f8c;
+  }
+
+  /* ── 安装到桌面：居中一行 ── */
+  .hall-install {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 0 22px;
+  }
+  .hall-install__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: #8f8f8c;
+  }
+  .hall-install__lb {
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: #8f8f8c;
+  }
+
+  @media (min-width: 700px) {
+    .hall {
+      padding-top: 30px;
+      gap: 14px;
+    }
+    .hall-wall {
+      padding: 26px;
+    }
+    .hall-wall__title {
+      font-size: 26px;
+    }
+    .hall-cell {
+      min-height: 148px;
+      padding: 20px;
     }
   }
 </style>
@@ -258,9 +489,17 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
         try { if (newest) localStorage.setItem("wall_seen", newest); } catch (e) {}
 
         head.textContent = "↻ 最近更新 " + fmt(newest);
-        listEl.innerHTML = d.items
-          .map((i) => '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">· ' + esc(i.text) + "</div>")
-          .join("");
+        // 2026-10-18：不再整体重画 innerHTML —— 那样会丢掉行首的图片图标，
+        // 也会把构建时从 /api/posts 抓到的真钩子又盖回「🔒 会员内容」。
+        // 改法：只把「不是 🔒 占位符」的文字刷进已有的 .hall-upd__tx 里。
+        const REDACTED = /^\s*🔒/;
+        const txEls = listEl.querySelectorAll(".hall-upd__tx");
+        d.items.forEach((i, idx) => {
+          const el = txEls[idx];
+          if (!el) return;
+          const txt = String((i && i.text) || "");
+          if (txt && !REDACTED.test(txt)) el.textContent = txt;
+        });
         if (fresh > 0) {
           chip.textContent = fresh + " 条新";
           chip.style.display = "inline-block";
@@ -322,7 +561,9 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
       deferredPrompt = e;
     });
 
-    btn.addEventListener("click", async () => {
+    // 2026-10-18：点击绑在**整行**上（原来是绑 #install-btn，那颗按钮只有 16×16，
+    // 点「安装到桌面」四个字没反应）。按钮在 wrap 里，点它也会冒泡上来，所以不用绑两次。
+    wrap.addEventListener("click", async () => {
       if (isIOS) {
         alert("请点击浏览器底部的「分享」按钮，然后选择「添加到主屏幕」，即可把焦羽放到桌面");
         return;

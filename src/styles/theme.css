@@ -10,16 +10,34 @@
   --font-app: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
 }
 
-/* Light theme values */
+/* Light theme values
+   2026-10-18 改版：素雅黑白灰，层次靠明度分层不靠色相；全站只留一个点缀色 --gold
+   原值备回滚：--background:#fdfdfd  --foreground:#282728  --accent:#006cac
+              --muted:#e6e6e6  --muted-foreground:#6b7280  --border:#ece9e9 */
 :root,
 [data-theme="light"] {
-  --background: #fdfdfd;
-  --foreground: #282728;
-  --accent: #006cac;
+  --background: #fafaf9;
+  --foreground: #191919;
+  --accent: #1c1c1b;
   --accent-foreground: #ffffff;
-  --muted: #e6e6e6;
-  --muted-foreground: #6b7280;
-  --border: #ece9e9;
+  --muted: #f4f4f3;
+  --muted-foreground: #6e6e6c;
+  --border: #ebebe9;
+
+  /* 设计规格补充色（直接以 CSS 变量使用） */
+  --ink: #191919;
+  --ink2: #6e6e6c;
+  --ink3: #8f8f8c;
+  --ink4: #a3a3a0;
+  --paper: #fafaf9;
+  --card: #ffffff;
+  --soft: #f4f4f3;
+  --soft2: #f8f8f7;
+  --line: #ebebe9;
+  --line2: #e3e3e0;
+  --sep: #f2f2f0;
+  --dark: #1c1c1b;
+  --gold: #9c8a68;
 }
 
 /* Dark theme values */

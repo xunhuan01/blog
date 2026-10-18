@@ -8,52 +8,53 @@ type Props = {
   variant?: "h2" | "h3";
 } & CollectionEntry<"posts">;
 
-const { variant: Heading = "h2", id, data, filePath } = Astro.props;
+const { variant: Heading = "h2", id, data, filePath, body } = Astro.props;
 
 const { title, description, tags, featured, password, ...props } = data;
 const category = tags?.[0] || "";
 const postUrl = getPostUrl(id, filePath, Astro.currentLocale);
+const excerpt = makeExcerpt(body) || description || "";
+
+// 摘要：取正文开头一段，交给 CSS 收成整两行（2026-10-18 用户要求：不要自动生成的 description）
+// 2026-10-18 傍晚（用户：列表里摘要只写了一行半就被截断，要写满两行）：
+//   原来只取 60 字 —— 390px 窄屏够两行，容器一宽就只剩一行半，且截断处没有省略号。
+//   现在取 120 字：任何宽度下都长过两行，由 CSS 的 -webkit-line-clamp:2 统一收成整两行；
+//   正文本身不足两行的，按原样显示（截断时才补一个省略号）。
+function makeExcerpt(raw) {
+  const EXCERPT_CHARS = 120; // 放在函数内：Card.astro 里 makeExcerpt 的调用早于本文件的模块级声明，放外面会 TDZ 报错
+  const plain = String(raw || "")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/[*_~`]/g, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!plain) return "";
+  if (plain.length <= EXCERPT_CHARS) return plain;
+  return plain.slice(0, EXCERPT_CHARS) + "…";
+}
 ---
 
-<li>
-  <a
-    href={postUrl}
-    data-astro-prefetch="viewport"
-    class="block border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow max-w-[340px] mx-auto w-full"
-  >
-    <!-- 置顶 + 分类 -->
-    <div class="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-1">
-      {
-            featured && <span class="bg-accent/10 text-accent px-1 py-0.5 rounded text-[10px]">置顶</span>
-          }
-          {
-            password && <span class="text-muted-foreground/60 text-[10px]">🔒 加密</span>
-          }
-          {
-            category && (
-              <span class="text-accent font-medium">{category}</span>
-            )
-          }
+<li class="post-item">
+  <a href={postUrl} data-astro-prefetch="viewport" class="post-card">
+    <div class="post-card__head">
+      <Heading transition:name={toTransitionName(title)} class="post-card__title">
+        {title}
+      </Heading>
+      {password && <span class="chip chip--member">会员</span>}
+      <span class="post-card__date">
+        <Datetime {...props} />
+      </span>
     </div>
 
-    <!-- 标题 -->
-    <Heading
-      transition:name={toTransitionName(title)}
-      class="text-lg font-extrabold mb-1 leading-snug"
-    >
-      {title}
-    </Heading>
+    {description && <p class="post-card__ex">{excerpt}</p>}
 
-    <!-- 摘要 -->
-    {
-      description && (
-        <p class="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-2">{description}</p>
-      )
-    }
-
-    <!-- 日期 → 左下角极小字体 -->
-    <div class="text-[3px] text-muted-foreground">
-      <Datetime {...props} />
+    <div class="post-card__meta">
+      {featured && <span class="chip chip--pin">置顶</span>}
+      {category && <span class="post-card__cat">{category}</span>}
     </div>
   </a>
 </li>

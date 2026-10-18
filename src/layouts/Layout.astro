@@ -35,7 +35,7 @@ const rssHref = getRelativeLocaleUrl(
 <html
   dir={site.dir ?? "ltr"}
   lang={Astro.currentLocale ?? site.lang}
-  class="overflow-y-scroll scroll-smooth"
+  class="overflow-y-scroll scroll-smooth mv1 mv2 mv3"
 >
   <head>
     <meta charset="UTF-8" />
@@ -166,15 +166,15 @@ const rssHref = getRelativeLocaleUrl(
     <!-- 手机端底部导航 -->
     <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
       <div class="flex justify-around items-center py-2">
-        <a href="/" data-astro-prefetch="viewport" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
+        <a href="/" data-astro-prefetch="viewport" class:list={["flex flex-col items-center gap-0.5 text-xs", Astro.url.pathname === "/" ? "text-accent font-semibold" : "text-foreground/70"]}>
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
           <span>文章</span>
         </a>
-        <a href="/about/" data-astro-prefetch="viewport" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
+        <a href="/about/" data-astro-prefetch="viewport" class:list={["flex flex-col items-center gap-0.5 text-xs", Astro.url.pathname === "/about/" ? "text-accent font-semibold" : "text-foreground/70"]}>
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span>聊天</span>
         </a>
-        <a href="/purchase/" data-astro-prefetch="viewport" class="flex flex-col items-center gap-0.5 text-xs text-foreground/70">
+        <a href="/purchase/" data-astro-prefetch="viewport" class:list={["flex flex-col items-center gap-0.5 text-xs", Astro.url.pathname === "/purchase/" ? "text-accent font-semibold" : "text-foreground/70"]}>
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span>购买</span>
         </a>
@@ -259,6 +259,15 @@ const rssHref = getRelativeLocaleUrl(
                 setTimeout(() => { let g=null; try{g=sessionStorage.getItem("lastTag")}catch(_){} document.querySelector('[data-tag="'+(g||"皮条往事")+'"]')?.click() }, 0);
               }
             }
+            // 2026-10-18 修（用户：点了底栏按钮不变色）：App 外壳切面板不改 URL，而底栏高亮是
+            // 服务端按 Astro.url.pathname 渲染的 → 点「购买」面板切过去了、底栏还停在「文章」深色。
+            // 这里手动把三档高亮同步到刚选中的那档。
+            document.querySelectorAll("body > nav a").forEach(a => {
+              const on = a.getAttribute("href") === href;
+              a.classList.toggle("text-accent", on);
+              a.classList.toggle("font-semibold", on);
+              a.classList.toggle("text-foreground/70", !on);
+            });
             curPanelId = panelId;
             restorePanelScroll(panelId);
           });

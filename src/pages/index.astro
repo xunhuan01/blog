@@ -35,6 +35,28 @@ const sortedTags = [
   ...tags.filter(t => t.tagName === "皮条往事"),
   ...tags.filter(t => t.tagName !== "皮条往事"),
 ];
+
+// 摘要：取正文开头一段，交给 CSS 收成整两行（2026-10-18 用户要求：不要自动生成的 description）
+// 2026-10-18 傍晚（用户：列表里摘要只写了一行半就被截断，要写满两行）：
+//   原来只取 60 字 —— 390px 窄屏够两行，容器一宽就只剩一行半，且截断处没有省略号。
+//   现在取 120 字：任何宽度下都长过两行，由 CSS 的 -webkit-line-clamp:2 统一收成整两行；
+//   正文本身不足两行的，按原样显示（截断时才补一个省略号）。
+function makeExcerpt(raw) {
+  const EXCERPT_CHARS = 120; // 放在函数内：Card.astro 里 makeExcerpt 的调用早于本文件的模块级声明，放外面会 TDZ 报错
+  const plain = String(raw || "")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/[*_~`]/g, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!plain) return "";
+  if (plain.length <= EXCERPT_CHARS) return plain;
+  return plain.slice(0, EXCERPT_CHARS) + "…";
+}
 ---
 
 <Layout>
@@ -63,21 +85,25 @@ const sortedTags = [
           <button data-tag="往期" class="tag-btn text-left text-sm py-1.5 px-3 rounded-full bg-background/95 border border-border shadow-sm backdrop-blur-sm text-foreground/70">📚 往期</button>
         </div>
         <div class="sm:flex-1 min-w-0" id="article-list">
-          <p class="text-xs text-muted-foreground mb-2" id="result-count">全部文章（{sortedAllPosts.filter(p => !(p.data.tags || []).includes("小说")).length}篇）</p>
+          <p class="count" id="result-count">全部文章 · {sortedAllPosts.filter(p => !(p.data.tags || []).includes("小说")).length} 篇</p>
           <ul class="flex flex-col gap-3">
-            {sortedAllPosts.map(({ id, data, filePath }) => {
+            {sortedAllPosts.map(({ id, data, filePath, body }) => {
               const { title, tags: postTags, password, ...rest } = data;
               const postUrl = getPostUrl(id, filePath, locale);
               const isLocked = typeof password === "string" && password.length > 0;
+              const excerpt = makeExcerpt(body) || data.description || "";
               return (
-                <li class="article-item" data-tags={(postTags || []).join(",")}>
-                  <a href={postUrl} data-astro-prefetch="viewport" class="block border border-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex items-center gap-2 mb-0.5">
-                      <h3 class="text-sm font-bold">{title}</h3>
-                      {isLocked && <span style="font-size:10px;color:#fff;background:#fa5151;border-radius:4px;padding:1px 5px;flex-shrink:0;line-height:1.4">会员</span>}
+                                <li class="article-item post-item" data-tags={(postTags || []).join(",")}>
+                  <a href={postUrl} data-astro-prefetch="viewport" class="post-card">
+                    <div class="post-card__head">
+                      <h3 class="post-card__title">{title}</h3>
+                      {isLocked && <span class="chip chip--member">会员</span>}
+                      <span class="post-card__date"><Datetime {...rest} /></span>
                     </div>
-                    <p class="text-xs text-muted-foreground line-clamp-1">{data.description}</p>
-                    <div class="text-[3px] text-muted-foreground mt-1"><Datetime {...rest} /></div>
+                    <p class="post-card__ex">{excerpt}</p>
+                    <div class="post-card__meta">
+                      {postTags && postTags[0] && <span class="post-card__cat">{postTags[0]}</span>}
+                    </div>
                   </a>
                 </li>
               );
@@ -131,7 +157,9 @@ const sortedTags = [
               article.style.display = "none";
             }
           });
-          resultCount.textContent = tag === "往期" ? `全部文章（${count}篇）` : `#${btn.textContent.trim()}（${count}篇）`;
+          // 2026-10-18 修：原来拼的是 `#${btn.textContent}`，而按钮文字本身已经带 # → 显示成「##皮条往事」。
+          // 改成直接用 data-tag（不带 #），任何标签都只有一个井号。
+          resultCount.textContent = tag === "往期" ? `全部文章（${count}篇）` : `#${tag}（${count}篇）`;
           // 记住当前选中的标签：从文章返回首页时恢复用（2026-09-06 用户要求）
           try { sessionStorage.setItem("lastTag", tag); } catch (_) {}
           // 首页金色置顶按钮已按用户要求移除（2026-09-21）：通往性自由之路只在购买页保留入口，列表页不再出现

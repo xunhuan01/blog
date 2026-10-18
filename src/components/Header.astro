@@ -17,25 +17,12 @@ const t = useTranslations(locale);
 </a>
 
 <!-- 顶部栏（2026-09-21：手机端隐藏——焦羽.blog 只出现在浏览器自己的标题栏/搜索栏，页面内不再占一行） -->
-<header class="border-border bg-background border-b hidden sm:block hdr-desktop">
+<header class="border-border bg-background border-b hdr-desktop">
   <div class="max-w-4xl mx-auto relative flex items-center justify-center py-2 px-4">
     <a href="/" class="text-[15px] font-bold tracking-wide mx-auto">
       焦羽.blog
     </a>
   </div>
 </header>
-<script is:inline>
-  // 手机浏览器（含安卓自带浏览器）顶部空间宝贵：把站名交给浏览器标题栏，
-  // 小屏（<640px）直接移除这一行，桌面端保留。
-  (function () {
-    function stripHeaderOnMobile() {
-      if (window.matchMedia("(max-width: 639px)").matches) {
-        document.querySelectorAll("header.hdr-desktop").forEach(function (el) {
-          el.style.display = "none";
-        });
-      }
-    }
-    stripHeaderOnMobile();
-    document.addEventListener("astro:page-load", stripHeaderOnMobile);
-  })();
-</script>
+<!-- 2026-10-18 改版：移除「手机端强制隐藏 header」的内联脚本，手机上恢复 56px 品牌头 -->
+

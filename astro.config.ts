@@ -20,6 +20,9 @@ import config from "./astro-paper.config";
 
 export default defineConfig({
   site: config.site.url,
+  // 2026-10-18：关掉 Astro 开发工具条。它只在 dev 模式浮在页面底部（线上构建本来就没有），
+  // 但本地预览时会挡视线、也会跟着截图一起被拍进去。
+  devToolbar: { enabled: false },
   integrations: [
     mdx(),
     sitemap({

@@ -2,6 +2,7 @@
 @import "./theme.css";
 @import "./typography.css";
 @import "rehype-callouts/theme/obsidian";
+@import "./redesign.css"; /* 2026-10-18 改版覆盖层（删这行即回滚） */
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
@@ -45,17 +46,21 @@
 }
 
 
-/* 选中标签：蓝底白字（2026-09-21 用户要求——要让访客一眼看出当前在哪个标签） */
+/* 选中标签：深墨底白字
+   2026-09-21 用户要求「要让访客一眼看出当前在哪个标签」
+   2026-10-18 改版：跟随素雅体系，从蓝 #2563eb 换成深墨 #1c1c1b
+   原值备回滚：background:#2563eb / border-color:#2563eb / hover:#1d4ed8 */
 .tag-btn.tag-active {
-  background: #2563eb;
+  background: #1c1c1b;
   color: #fff;
-  border-color: #2563eb;
-  font-weight: 500;
+  border-color: #1c1c1b;
+  font-weight: 600;
 }
 .tag-btn.tag-active:hover {
-  background: #1d4ed8;
+  background: #000;
 }
 
-/* 手机端左下浮动标签丸 (方案C-改②): 滚动隐走/回滑 */
+/* 手机端左下浮动标签丸 (方案C-改②): 滚动隐走/回滑
+   2026-10-18 改版：已由吸顶分类条取代，DOM 删除后这段样式自动失效，保留注释备回滚 */
 #tag-dock { transition: opacity 0.25s ease, transform 0.25s ease; }
 #tag-dock.dock-hide { opacity: 0; transform: translateX(-14px); pointer-events: none; }
