@@ -84,12 +84,19 @@ function makeExcerpt(raw) {
             </li>
           </ul>
         </div>
-        <!-- 手机端: 左下浮动标签丸 (方案C-改②: 滚动时自动隐走, 停下0.45s滑回) -->
-        <div id="tag-dock" class="sm:hidden fixed left-3 bottom-16 z-40 flex flex-col items-start gap-1.5">
-          {sortedTags.map(({ tag, tagName }) => (
-            <button data-tag={tagName} class="tag-btn text-left text-sm py-1.5 px-3 rounded-full bg-background/95 border border-border shadow-sm backdrop-blur-sm text-foreground/70">#{tagName}（{tagCount(tagName)}篇）</button>
-          ))}
-          <button data-tag="往期" class="tag-btn text-left text-sm py-1.5 px-3 rounded-full bg-background/95 border border-border shadow-sm backdrop-blur-sm text-foreground/70">📚 往期（{tagCount("往期")}篇）</button>
+        <!-- 手机端：右下角标签球（2026-10-19 用户指定）
+             一颗球 → 点开向上展开带篇数的标签 → 一滚就缩回球。
+             按钮仍带 .tag-btn + data-tag，所以原来的筛选/高亮逻辑一行不用改。 -->
+        <div id="tag-dock" class="sm:hidden dock-closed">
+          <div id="tag-pills" class="dock-pills">
+            {sortedTags.map(({ tag, tagName }) => (
+              <button data-tag={tagName} class="tag-btn dock-pill">#{tagName}<i class="dock-n">{tagCount(tagName)}</i></button>
+            ))}
+            <button data-tag="往期" class="tag-btn dock-pill">📚 往期<i class="dock-n">{tagCount("往期")}</i></button>
+          </div>
+          <button id="dock-ball" class="dock-ball" type="button" aria-label="切换分类">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </button>
         </div>
         <div class="sm:flex-1 min-w-0" id="article-list">
           {/* 2026-10-19：这行「#皮条往事（9篇）」已取消，篇数并进上面的标签按钮 */}
@@ -175,20 +182,35 @@ function makeExcerpt(raw) {
       if (targetBtn) targetBtn.click();
       else document.querySelector('[data-tag="皮条往事"]')?.click();
     }
-    // 浮动标签丸: 滚动时隐走, 停止 450ms 后滑回 (只绑一次)
+    // ── 右下角标签球（2026-10-19）：默认只有一颗球；点球展开竖排标签；一滚就缩回球 ──
+    // 只绑一次（astro:page-load 会重复调用 initApp）
     const dock = document.getElementById("tag-dock");
-    if (dock && !window.__dockScrollBound) {
-      window.__dockScrollBound = true;
-      let dockTimer;
-      const hideDock = () => {
-        dock.classList.add("dock-hide");
-        clearTimeout(dockTimer);
-        dockTimer = setTimeout(() => dock.classList.remove("dock-hide"), 450);
+    const ball = document.getElementById("dock-ball");
+    if (dock && ball && !window.__dockBound) {
+      window.__dockBound = true;
+      const closeDock = () => {
+        dock.classList.add("dock-closed");
+        dock.classList.remove("dock-open");
       };
-      window.addEventListener("scroll", hideDock, { passive: true });
-      // 手机端首页改由 #page-shell 承担滚动（App 式外壳，见文件末尾样式），它滚也要收起标签丸
+      const openDock = () => {
+        dock.classList.remove("dock-closed");
+        dock.classList.add("dock-open");
+      };
+      ball.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (dock.classList.contains("dock-open")) closeDock();
+        else openDock();
+      });
+      // 选完任何一颗（手机球里的、桌面那列的）都收起
+      dock.querySelectorAll(".tag-btn").forEach(b => b.addEventListener("click", closeDock));
+      // 点页面其它地方也收起
+      document.addEventListener("click", (e) => { if (!dock.contains(e.target)) closeDock(); });
+      // 一滚就缩回球（小球本身不消失）
+      const onScroll = () => { if (dock.classList.contains("dock-open")) closeDock(); };
+      window.addEventListener("scroll", onScroll, { passive: true });
       const shell = document.getElementById("page-shell");
-      if (shell) shell.addEventListener("scroll", hideDock, { passive: true });
+      if (shell) shell.addEventListener("scroll", onScroll, { passive: true });
+      closeDock();
     }
   }
   initApp();

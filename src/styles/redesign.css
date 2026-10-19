@@ -121,54 +121,100 @@
   border: 1px solid var(--line2);
 }
 
-/* ── 分类：手机端把桌面竖排标签栏改造成吸顶横排 chips ─────────── */
+/* ── 分类入口（2026-10-19 改版）─────────────────────────────────
+   手机端不再用「顶部横向 chips」：改成右下角一颗标签球，点开才是竖排标签。
+   桌面那列 #tag-list 保持 Tailwind 的 hidden sm:block（手机端本来就不渲染），
+   这里不需要再放出来 —— 所以下面这整块只剩「桌面列在手机端必须不出现」的保险。 */
 @media (max-width: 639px) {
-  /* 浮动标签丸彻底隐藏（DOM 暂留，上线前再清理） */
-  #tag-dock {
+  #tags-panel > div > div:first-child {
     display: none !important;
   }
 
-  /* 桌面那列（hidden sm:block）在手机端放出来，改成横向滚动 chips */
-  #tags-panel > div > div:first-child {
-    display: block !important;
-    width: auto !important;
-    flex-shrink: 1 !important;
-  }
-  #tag-list {
+  /* ── 右下角标签球 ── */
+  #tag-dock {
+    position: fixed;
+    right: 14px;
+    bottom: 72px;            /* 底栏 55px + 一点呼吸 */
+    z-index: 40;
     display: flex;
-    flex-direction: row;
-    gap: 7px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 10px 16px;
-    background: var(--card);
-    border-bottom: 1px solid var(--sep);
-    position: sticky;
-    top: 56px;
-    z-index: 20;
-    margin: 0;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
   }
-  #tag-list::-webkit-scrollbar {
-    display: none;
+  .dock-pills {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    transform-origin: bottom right;
+    transition: opacity 0.2s ease, transform 0.26s cubic-bezier(0.2, 0.9, 0.2, 1);
   }
-  #tag-list li {
-    flex: 0 0 auto;
+  #tag-dock.dock-closed .dock-pills {
+    opacity: 0;
+    transform: translateY(10px) scale(0.9);
+    pointer-events: none;
   }
-  #tag-list .tag-btn {
-    white-space: nowrap;
+  .dock-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 9px 9px 15px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    padding: 6px 11px;
-    background: transparent;
-    color: #757573;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 22px rgba(25, 25, 25, 0.11);
     font-size: 12.5px;
     line-height: 1;
+    color: var(--ink2);
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
   }
-  #tag-list .tag-btn.tag-active {
+  .dock-pill .dock-n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #f0f0ee;
+    color: var(--ink3);
+    font-size: 10px;
+    font-weight: 700;
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+  }
+  .dock-pill.tag-active {
     background: var(--dark);
     border-color: var(--dark);
     color: #fff;
     font-weight: 600;
+  }
+  .dock-pill.tag-active .dock-n {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+  }
+  .dock-ball {
+    width: 54px;
+    height: 54px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--dark);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 26px rgba(25, 25, 25, 0.26);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dock-ball svg {
+    width: 22px;
+    height: 22px;
+    transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+  #tag-dock.dock-open .dock-ball svg {
+    transform: rotate(45deg);
   }
 }
 
@@ -189,22 +235,12 @@
 
 /* ── 手机底栏当前项：深墨（原来三项同色） ───────────────────── */
 
-/* ── 手机端品牌头（原版被内联 JS 强制隐藏，这里恢复成 56px） ── */
+/* ── 手机端品牌头：2026-10-19 用户要求去掉 ─────────────────────
+   （先前改版把它恢复成 56px，用户实测后觉得上面空一块、压了文章位置，要求取消；
+     桌面端不受影响，顶栏照常显示。） */
 @media (max-width: 639px) {
   header.hdr-desktop {
-    display: block;
-    position: sticky;
-    top: 0;
-    z-index: 30;
-  }
-  header.hdr-desktop > div {
-    height: 56px;
-    padding: 0 18px;
-  }
-  header.hdr-desktop a {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    display: none;
   }
 }
 
@@ -261,15 +297,8 @@
     cursor: pointer;
   }
 
-  /* 1-C 分类 chips：26.5px → 40px 高，字 12.5 → 13px */
-  html.mv1 #tag-list {
-    padding: 8px 16px;
-  }
-  html.mv1 #tag-list .tag-btn {
-    min-height: 40px;
-    padding: 11px 14px;
-    font-size: 13px;
-  }
+  /* 1-C 已作废（2026-10-19）：手机端不再有顶部横向 chips，标签入口改成右下角标签球，
+     那颗球本身 54×54、每颗标签 38px 高，已经满足触控尺寸，这里不再需要补。 */
 
   /* 1-D 其余小热区补到 44px（热区变大，但不撑开版面 —— 用负边距抵消） */
   html.mv1 .buy-ask a {
@@ -335,17 +364,8 @@
     margin-top: 5px;
   }
 
-  /* 2-B 分类栏收窄 + 真正吸顶：display:contents 去掉只有 54px 高的中间层，
-         让 sticky 的包含块变成整段（原写法 sticky 完全不生效） */
-  html.mv2 #tags-panel > div > div:first-child,
-  html.mv2x #tags-panel > div > div:first-child {
-    display: contents !important;
-  }
-  html.mv2 #tag-list,
-  html.mv2x #tag-list {
-    top: 57px;
-    padding: 7px 16px;
-  }
+  /* 2-B 已作废（2026-10-19）：顶部横向标签栏整个取消，改为右下角标签球，
+     所以这里不再需要把桌面那列放出来、也不需要调它的 sticky 偏移。 */
 
   /* 2-C 聊天页：内容底 524px、下方 265px 空白（占视口 31%）→ 把两张卡撑起来 */
   html.mv2 .hall {
