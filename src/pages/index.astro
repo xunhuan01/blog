@@ -18,17 +18,23 @@ const { posts: postsConfig } = config;
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
 
-// 首页文章
-const posts = await getCollection("posts");
-const sortedPosts = getSortedPosts(posts);
-const pinned = sortedPosts.filter(p => p.data.featured);
-const rest = sortedPosts.filter(p => !p.data.featured);
-const displayPosts = [...pinned, ...rest];
 const homePath = getRelativeLocaleUrl(locale, "");
 
 // 分类标签文章
 const allPosts = await getCollection("posts", ({ data }) => !data.draft);
+// getSortedPosts 会把带 order（或标题里带「（一）（二）」）的文章排在最前 —— 皮条生涯 1/2/3。
+// 2026-11-01 用户要求：这个「置顶」只在「皮条往事」标签下生效；切到「全部」就按正常时间排。
+// 所以这里另算一份纯时间序给服务端渲染，点「皮条往事」时再由前端把 order 文章挪到最前。
 const sortedAllPosts = getSortedPosts(allPosts);
+const tsOf = (p) => Math.floor(new Date(p.data.modDatetime ?? p.data.pubDatetime).getTime() / 1000);
+const orderOf = (p) => {
+  if (typeof p.data.order === "number") return p.data.order;
+  const m = /[（(]\s*(\d{1,2}|[一二三四五六七八九十])\s*[)）]/.exec(String(p.data.title || ""));
+  if (!m) return null;
+  const CN = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+  return /^\d+$/.test(m[1]) ? Number(m[1]) : (CN[m[1]] ?? null);
+};
+const sortedByTime = [...sortedAllPosts].sort((a, b) => tsOf(b) - tsOf(a));
 const tags = getUniqueTags(allPosts);
 // 皮条往事置顶，其余标签保持原顺序
 const sortedTags = [
@@ -38,8 +44,12 @@ const sortedTags = [
 
 // 2026-10-19 用户要求：去掉列表上方那行「#皮条往事（9篇）」，把篇数直接并进每个标签按钮。
 // 口径与筛选逻辑一致：普通标签 = 带该标签的文章数；「往期」= 全部文章里不含「小说」的（小说只能在小说标签里看）。
+// 2026-11-01 用户要求：原来的「往期」改名「全部」，并提到标签列最前。
+// 语义不变：「全部」= 除「小说」以外的所有文章（小说仍只在小说标签里看）。
+// 旧链接 ?tag=往期 继续可用。
+const isAllTag = (name) => name === "全部" || name === "往期";
 const tagCount = (name) =>
-  name === "往期"
+  isAllTag(name)
     ? sortedAllPosts.filter(p => !(p.data.tags || []).includes("小说")).length
     : sortedAllPosts.filter(p => (p.data.tags || []).includes(name)).length;
 
@@ -74,14 +84,15 @@ function makeExcerpt(raw) {
       <div class="sm:flex sm:gap-8 mt-0">
         <div class="hidden sm:block sm:w-36 shrink-0">
           <ul class="flex flex-col gap-1" id="tag-list">
+            {/* 2026-11-01：全部置顶（原「往期」排在最后） */}
+            <li>
+              <button data-tag="全部" class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">全部（{tagCount("全部")}篇）</button>
+            </li>
             {sortedTags.map(({ tag, tagName }) => (
               <li>
                 <button data-tag={tagName} class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">#{tagName}（{tagCount(tagName)}篇）</button>
               </li>
             ))}
-            <li>
-              <button data-tag="往期" class="tag-btn text-left w-full text-sm py-1 px-2 rounded hover:bg-accent/10 transition-colors text-foreground/70">📚 往期（{tagCount("往期")}篇）</button>
-            </li>
           </ul>
         </div>
         <!-- 手机端：右下角标签球（2026-10-19 用户指定）
@@ -89,10 +100,11 @@ function makeExcerpt(raw) {
              按钮仍带 .tag-btn + data-tag，所以原来的筛选/高亮逻辑一行不用改。 -->
         <div id="tag-dock" class="sm:hidden dock-closed">
           <div id="tag-pills" class="dock-pills">
+            {/* 2026-11-01：全部置顶（原「往期」排在最后） */}
+            <button data-tag="全部" class="tag-btn dock-pill">全部<i class="dock-n">{tagCount("全部")}</i></button>
             {sortedTags.map(({ tag, tagName }) => (
               <button data-tag={tagName} class="tag-btn dock-pill">#{tagName}<i class="dock-n">{tagCount(tagName)}</i></button>
             ))}
-            <button data-tag="往期" class="tag-btn dock-pill">📚 往期<i class="dock-n">{tagCount("往期")}</i></button>
           </div>
           <button id="dock-ball" class="dock-ball" type="button" aria-label="切换分类">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
@@ -101,13 +113,13 @@ function makeExcerpt(raw) {
         <div class="sm:flex-1 min-w-0" id="article-list">
           {/* 2026-10-19：这行「#皮条往事（9篇）」已取消，篇数并进上面的标签按钮 */}
           <ul class="flex flex-col gap-3">
-            {sortedAllPosts.map(({ id, data, filePath, body }) => {
+            {sortedByTime.map(({ id, data, filePath, body }) => {
               const { title, tags: postTags, password, ...rest } = data;
               const postUrl = getPostUrl(id, filePath, locale);
               const isLocked = typeof password === "string" && password.length > 0;
               const excerpt = makeExcerpt(body) || data.description || "";
               return (
-                                <li class="article-item post-item" data-tags={(postTags || []).join(",")}>
+                                <li class="article-item post-item" data-tags={(postTags || []).join(",")} data-order={orderOf({ data }) ?? ""} data-ts={tsOf({ data })}>
                   <a href={postUrl} data-astro-prefetch="viewport" class="post-card">
                     <div class="post-card__head">
                       <h3 class="post-card__title">{title}</h3>
@@ -149,6 +161,24 @@ function makeExcerpt(raw) {
     const articles = document.querySelectorAll(".article-item");
     // 2026-10-19：列表上方那行「#皮条往事（9篇）」已取消（篇数并进标签按钮），这里不再引用它
     if (tagBtns.length && articles.length) {
+      // 2026-11-01：列表有两种顺序 ——
+      //   皮条往事：带 order 的系列文章（皮条生涯 1·2·3）排最前，其余按时间倒序；
+      //   其它标签（含「全部」）：一律按发布时间倒序，不做任何置顶。
+      const listEl = document.querySelector("#article-list ul");
+      const reorderList = (pinFirst) => {
+        if (!listEl) return;
+        const items = [...listEl.children];
+        const ord = (el) => (el.dataset.order ? Number(el.dataset.order) : Infinity);
+        const ts = (el) => Number(el.dataset.ts || 0);
+        items.sort((a, b) => {
+          if (pinFirst) {
+            const oa = ord(a), ob = ord(b);
+            if (oa !== ob) return oa - ob;
+          }
+          return ts(b) - ts(a);
+        });
+        items.forEach(el => listEl.appendChild(el));
+      };
       tagBtns.forEach(btn => {
         btn.addEventListener("click", () => {
           const tag = btn.dataset.tag;
@@ -158,8 +188,8 @@ function makeExcerpt(raw) {
           });
           articles.forEach(article => {
             const articleTags = article.dataset.tags;
-            if (tag === "往期") {
-              // 往期 = 全部文章，但隐藏小说（小说只能在小说标签里看）
+            if (tag === "全部" || tag === "往期") {
+              // 全部 = 除「小说」外的所有文章（小说只能在小说标签里看）
               const isNovel = articleTags.includes("小说");
               article.style.display = isNovel ? "none" : "block";
             } else if (articleTags.includes(tag)) {
@@ -168,26 +198,56 @@ function makeExcerpt(raw) {
               article.style.display = "none";
             }
           });
+          // 2026-11-01：只有「皮条往事」把系列文章排最前，其余按时间倒序
+          reorderList(tag === "皮条往事");
           // 记住当前选中的标签：从文章返回首页时恢复用（2026-09-06 用户要求）
           try { sessionStorage.setItem("lastTag", tag); } catch (_) {}
           // 首页金色置顶按钮已按用户要求移除（2026-09-21）：通往性自由之路只在购买页保留入口，列表页不再出现
         });
       });
-      // 选中顺序：URL ?tag= 参数 > 上次选中的标签（从文章返回时保留）> 默认皮条往事
-      const urlTag = new URLSearchParams(window.location.search).get("tag");
-      let lastTag = null;
-      try { lastTag = sessionStorage.getItem("lastTag"); } catch (_) {}
-      const targetTag = urlTag || lastTag || "皮条往事";
-      const targetBtn = document.querySelector(`[data-tag="${targetTag}"]`);
-      if (targetBtn) targetBtn.click();
-      else document.querySelector('[data-tag="皮条往事"]')?.click();
+      // 页面加载时的默认选中（2026-11-01 用户要求）
+      //   优先顺序：URL ?tag= 参数（从标签页跳来）
+      //            > 从文章内页返回首页 → 恢复刚才选的标签
+      //            > 首次访客「皮条往事」 > 其余「全部」
+      //
+      // 两个坑（都实测翻过车，别删）：
+      // ① initApp 在首次加载会跑两次（末尾直接调一次 + ClientRouter 的 astro:page-load 又一次）。
+      //    所以这里用「这个 URL 只应用一次」的守卫挡住第二次 —— 否则第二次会把刚从文章恢复出来的
+      //    标签覆盖成默认值。
+      // ② visited 标记必须延后写，否则第二次调用就读到 "1"，把首次访客也判成回访，皮条往事永远出不来。
+      const normTag = (v) => (v === "往期" ? "全部" : v); // 兼容改名前的老链接
+      // 守卫用「页面上还没有高亮」判断，而不是比较 URL —— 浏览器后退回到同一个 URL 时，
+      // URL 比较会把这次导航误判成「已经处理过」，结果首页既不高亮也不筛选（2026-11-01 实测）。
+      if (!document.querySelector(".tag-active")) {
+        const urlTag = normTag(new URLSearchParams(window.location.search).get("tag"));
+        let seen = false;
+        try { seen = localStorage.getItem("waiwei:visited") === "1"; } catch (_) {}
+        // 从文章内页返回：Layout 会在文章页写下 __fromPost，这里消费掉并还原上次选的标签
+        let restoreTag = null;
+        try {
+          if (sessionStorage.getItem("__fromPost") === "1") {
+            restoreTag = normTag(sessionStorage.getItem("lastTag"));
+            sessionStorage.removeItem("__fromPost");
+          }
+        } catch (_) {}
+        const targetTag = urlTag || restoreTag || (seen ? "全部" : "皮条往事");
+        if (!seen && !window.__visitMarkQueued) {
+          window.__visitMarkQueued = true;
+          setTimeout(() => { try { localStorage.setItem("waiwei:visited", "1"); } catch (_) {} }, 1200);
+        }
+        const targetBtn = document.querySelector(`[data-tag="${targetTag}"]`);
+        if (targetBtn) targetBtn.click();
+        else document.querySelector('[data-tag="皮条往事"]')?.click();
+      }
     }
     // ── 右下角标签球（2026-10-19）：默认只有一颗球；点球展开竖排标签；一滚就缩回球 ──
-    // 只绑一次（astro:page-load 会重复调用 initApp）
+    // 守卫必须挂在**球元素自己**身上，不能挂 window：从文章页返回首页时 ClientRouter 会把整块
+    // DOM 换掉，#tag-dock 是全新元素，而 window.__dockBound 仍是 true → 事件永远绑不上，
+    // 球点不开（2026-11-01 用户实测到；改前用的是 window 全局标记）。
     const dock = document.getElementById("tag-dock");
     const ball = document.getElementById("dock-ball");
-    if (dock && ball && !window.__dockBound) {
-      window.__dockBound = true;
+    if (dock && ball && !ball.dataset.dockBound) {
+      ball.dataset.dockBound = "1";
       const closeDock = () => {
         dock.classList.add("dock-closed");
         dock.classList.remove("dock-open");
@@ -203,10 +263,11 @@ function makeExcerpt(raw) {
       });
       // 选完任何一颗（手机球里的、桌面那列的）都收起
       dock.querySelectorAll(".tag-btn").forEach(b => b.addEventListener("click", closeDock));
-      // 点页面其它地方也收起
-      document.addEventListener("click", (e) => { if (!dock.contains(e.target)) closeDock(); });
+      // 点页面其它地方也收起。document/window 上的监听不会随 DOM 重建而消失，每重建一次就多一条，
+      // 用 isConnected 让指向旧元素的那几条自动变成空操作（否则旧 dock 的 closeDock 会乱跑）。
+      document.addEventListener("click", (e) => { if (dock.isConnected && !dock.contains(e.target)) closeDock(); });
       // 一滚就缩回球（小球本身不消失）
-      const onScroll = () => { if (dock.classList.contains("dock-open")) closeDock(); };
+      const onScroll = () => { if (dock.isConnected && dock.classList.contains("dock-open")) closeDock(); };
       window.addEventListener("scroll", onScroll, { passive: true });
       const shell = document.getElementById("page-shell");
       if (shell) shell.addEventListener("scroll", onScroll, { passive: true });

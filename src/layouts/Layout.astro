@@ -198,6 +198,15 @@ const rssHref = getRelativeLocaleUrl(
       }
     </script>
     <script>
+      // 2026-11-01：记住「当前停在文章内页」，供首页判断从文章返回时是否要恢复上次选的标签。
+      // 只写一个 sessionStorage 标记，不干预任何导航；首页消费后会自己删掉。
+      const markFromPost = () => {
+        try {
+          if (location.pathname.includes("/posts/")) sessionStorage.setItem("__fromPost", "1");
+        } catch (_) {}
+      };
+      markFromPost();
+      document.addEventListener("astro:page-load", markFromPost);
       // 面板切换的滚动位置管理（2026-09-26 修「点聊天时整个页面突然一顿」）
       // 成因① 文章列表面板很长、聊天/购买面板只有一屏，切换时不重置滚动位置，
       //       浏览器直接把旧面板的 scrollY 钳到新面板上 → 视觉上整页猛地移一大截
@@ -264,7 +273,9 @@ const rssHref = getRelativeLocaleUrl(
                 // 切回文章面板时恢复上次选中的标签（与 index.astro 的 lastTag 逻辑一致）
                 // 注意：这里原来写的是 `t==="tags-panel"&&setTimeout(...)`，t 未定义 →
                 // 每次点击都抛 ReferenceError，后面「记滚动位置/恢复滚动」的代码全被跳过（2026-09-26 修）
-                setTimeout(() => { let g=null; try{g=sessionStorage.getItem("lastTag")}catch(_){} document.querySelector('[data-tag="'+(g||"皮条往事")+'"]')?.click() }, 0);
+                // 2026-11-01：默认值跟首页保持一致（首次访客皮条往事 / 回访全部）。
+                // lastTag 优先是为了面板间切换不丢当前选择；「往期」是改名前的旧值，归一成「全部」。
+                setTimeout(() => { let g=null; try{g=sessionStorage.getItem("lastTag")}catch(_){} if(g==="往期")g="全部"; let s=false; try{s=localStorage.getItem("waiwei:visited")==="1"}catch(_){} document.querySelector('[data-tag="'+(g||(s?"全部":"皮条往事"))+'"]')?.click() }, 0);
               }
             }
             // 2026-10-18 修（用户：点了底栏按钮不变色）：App 外壳切面板不改 URL，而底栏高亮是
