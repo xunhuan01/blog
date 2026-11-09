@@ -196,6 +196,34 @@ const rssHref = getRelativeLocaleUrl(
           navigator.serviceWorker.register("/sw.js").catch(() => {});
         });
       }
+
+      // 2026-11-09：桌面 PWA 常驻窗口时，切回前台也要能看到新文章。
+      // 只在本页有文章卡片时，比对线上首页与当前 DOM 的文章链接；不一致就整页刷新。
+      // 刷新后两边一致，不会来回循环。
+      const cardsSig = () =>
+        Array.from(document.querySelectorAll('.article-item a[href^="/posts/"]'))
+          .map((a) => a.getAttribute("href"))
+          .join("|");
+
+      const checkFresh = () => {
+        const local = cardsSig();
+        if (!local) return;
+        fetch("/?fresh=" + Date.now(), { cache: "no-store" })
+          .then((r) => (r.ok ? r.text() : ""))
+          .then((html) => {
+            if (!html) return;
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            const remote = Array.from(doc.querySelectorAll('.article-item a[href^="/posts/"]'))
+              .map((a) => a.getAttribute("href"))
+              .join("|");
+            if (remote && remote !== local) location.reload();
+          })
+          .catch(() => {});
+      };
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") checkFresh();
+      });
     </script>
     <script>
       // 2026-11-01：记住「当前停在文章内页」，供首页判断从文章返回时是否要恢复上次选的标签。

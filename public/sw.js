@@ -1,3 +1,5 @@
+// Service Worker v6：页面导航改成网络优先（每次打开都是最新内容），
+//   其余资源仍缓存优先；CACHE 名字不改，避免已安装的人离线内容被清空。
 // Service Worker v5：零抢跑策略
 // 策略：
 //  1. 新访客打开首页：什么都不预载、不预热
@@ -47,6 +49,20 @@ self.addEventListener("fetch", (e) => {
     });
   }
 
+  // 带 fresh 标记（页面自检用）：直连网络，不写缓存
+  if (url.searchParams.has("fresh")) {
+    e.respondWith(fetch(request));
+    return;
+  }
+
+  // ① 页面导航（点桌面图标、点链接、刷新）：先问网络，拿不到再退回缓存。
+  //    已安装到桌面的人每次打开看到的都是最新内容，不会卡在旧缓存上。
+  if (request.mode === "navigate" && !isWarm) {
+    e.respondWith(networkFirst(request));
+    return;
+  }
+
+  // ② 其余请求（图片 / CSS / 后台预热抓取）：缓存优先，命中即回，顺带后台更新
   e.respondWith(
     caches.match(request).then((cached) => {
       const network = fetch(request)
@@ -185,4 +201,33 @@ async function warmNewLinks() {
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+// ---------- 导航请求：网络优先，2.5 秒拿不到再退回缓存 ----------
+const NAV_TIMEOUT_MS = 2500;
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), NAV_TIMEOUT_MS);
+  try {
+    const resp = await fetch(request, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (resp && resp.status === 200) {
+      cache.put(request, resp.clone());
+      scheduleWarm();
+      return resp;
+    }
+    const hit = await cache.match(request);
+    return hit || resp;
+  } catch (_) {
+    clearTimeout(timer);
+    pauseWarm(6000);
+    const hit = await cache.match(request);
+    if (hit) return hit;
+    return new Response("离线，且这一页还没有缓存过", {
+      status: 503,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
 }
