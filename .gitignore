@@ -1,4 +1,4 @@
-﻿# build output
+# build output
 dist/
 
 # generated types
@@ -37,3 +37,6 @@ npm-cache/
 
 # 2026-10-18：图片压缩前的备份，不进仓库
 .image-backup-20261018/
+
+# 2026-11-09：push 后自动清缓存的运行日志
+.purge.log

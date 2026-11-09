@@ -1,0 +1,5 @@
+#!/bin/sh
+# push 之后自动清 waiwei.top 的 nginx 缓存（后台跑，不阻塞 git，也不影响 push 结果）
+# 安装：powershell -ExecutionPolicy Bypass -File scripts/install-hooks.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File "D:/myblog/scripts/purge-after-push.ps1" >/dev/null 2>&1 &
+exit 0
