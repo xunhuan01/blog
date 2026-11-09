@@ -1,5 +1,5 @@
 ---
-title: 邵艾伦不真诚
+title: 如何评价邵艾伦？
 author: 焦羽
 pubDatetime: 2026-11-09T00:00:00Z
 slug: insincere-influencer-critique
