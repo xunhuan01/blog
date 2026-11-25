@@ -59,9 +59,10 @@ const rssHref = getRelativeLocaleUrl(
     <!-- 聊天室握手预热: 提前完成 TCP+TLS, 点进聊天免等握手 (2026-09-07) -->
     <link rel="preconnect" href="https://chat.waiwei.top" crossorigin />
     <link rel="dns-prefetch" href="https://chat.waiwei.top" />
-    <!-- 线路一（上海阿里云 IP 直连，客服2）同样预热握手 (2026-09-26)；IP 无需 dns-prefetch，
-         且不写 crossorigin —— 访客点它属于页面跳转，走的是非 CORS 连接池 -->
-    <link rel="preconnect" href="https://139.224.1.54:9443" />
+    <!-- 2026-11-25：客服入口只剩 MiniChat，预热改成它的域名（原线路一 139.224.1.54:9443 已下线）。
+         不写 crossorigin —— 访客点它属于页面跳转，走的是非 CORS 连接池 -->
+    <link rel="preconnect" href="https://minichat.vip" />
+    <link rel="dns-prefetch" href="https://minichat.vip" />
     <!-- 方案4: 同站关键资源提前握手+DNS预热 (h1下每个资源独立连接, 提前建好省串行等待 2026-09-08) -->
     <link rel="preconnect" href="https://waiwei.top" crossorigin />
     <link rel="dns-prefetch" href="https://waiwei.top" />

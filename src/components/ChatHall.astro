@@ -3,11 +3,10 @@
 const HALL = {
   wall: "https://chat.waiwei.top/posts",
   member: "https://chat.waiwei.top/member",
-  // 两条线路放进同一张卡、中间一条竖分割线（2026-11-04 用户定：不要各自独立成卡，也不要多出别的卡）
-  // 线路一 = 上海阿里云 IP 直连（大陆 0.19 秒）；线路二 = MiniChat 房间（用户 2026-11-04 给的地址）
-  // 备注：原来的域名线路 https://chat.waiwei.top/ 暂不上入口；要恢复就把 chat2 换回它
-  chat1: "https://139.224.1.54:9443/",
-  chat2: "https://minichat.vip/zhu5",
+  // 2026-11-25 用户定：客服只留 MiniChat 一个入口。
+  // 原「线路一 = 上海阿里云 IP 直连 9443」已下线（同一张卡里两个入口，访客分不清该进哪个）。
+  // 要恢复到旧线路：把 kf 换回 "https://139.224.1.54:9443/"
+  kf: "https://minichat.vip/zhu5",
 };
 
 // 资源墙「最近更新」：构建时先抓一次接口，把最近 3 条直接写进 HTML（2026-10-04 用户要求：
@@ -157,7 +156,7 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
       </div>
     </a>
 
-    <!-- 会员群 / 线路一：两个方格并排（线路二按用户要求隐藏） -->
+    <!-- 会员群 / 在线客服：两个方格并排 -->
     <div class="hall-cells">
       <a href={HALL.member} class="hall-cell">
         <div class="hall-cell__top">
@@ -174,23 +173,16 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
         </div>
       </a>
 
-      <div class="hall-cell hall-cell--lines">
+      <a href={HALL.kf} class="hall-cell">
         <div class="hall-cell__top">
           <span class="hall-icw hall-icw--sm">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-3.7-.7L3 21l1.7-4.6A8.4 8.4 0 0 1 3.6 11.5 8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
           </span>
         </div>
-        <div class="hall-lines">
-          <a href={HALL.chat1} class="hall-line">
-            <span class="hall-line__nm">线路一</span>
-            <span class="hall-line__sub">客服在线</span>
-          </a>
-          <a href={HALL.chat2} class="hall-line">
-            <span class="hall-line__nm">线路二</span>
-            <span class="hall-line__sub">客服在线</span>
-          </a>
-        </div>
-      </div>
+        <!-- 2026-11-25：线路一/线路二合并成这一个入口（MiniChat），卡片结构与「会员群」一致 -->
+        <div class="hall-cell__nm">在线客服</div>
+        <div class="hall-cell__sub">客服在线</div>
+      </a>
     </div>
 
     <!-- 安装到桌面（PWA）：居中一行，不再 fixed 钉在底部 -->

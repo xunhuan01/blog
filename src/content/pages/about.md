@@ -14,7 +14,8 @@ description: "焦羽的个人简介"
   </div>
 
 <div style="text-align:center;margin-top:16px">
-  <a href="https://chat.waiwei.top/" target="_blank"
+  <!-- 2026-11-25：客服只留 MiniChat 一个入口（原指向 chat.waiwei.top） -->
+  <a href="https://minichat.vip/zhu5" target="_blank"
      style="display:inline-block;padding:10px 28px;border:2px solid #2563eb;color:#2563eb;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600">
     💬 立即私聊
   </a>
