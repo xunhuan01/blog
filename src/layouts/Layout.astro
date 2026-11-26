@@ -206,8 +206,9 @@ const rssHref = getRelativeLocaleUrl(
       <slot />
     </div>
     <NavProgress />
-    <!-- 留言板（2026-11-26 用户定方案 F）：右边缘竖排书签，靠下，全站可见；点开是底部抽屉 -->
-    <Guestbook mode="tab" />
+    <!-- 留言板（2026-11-26 用户定方案 F）：右边缘竖排书签，靠下；点开是底部抽屉。
+         2026-11-26 用户改：只在聊天界面出现，文章列表 / 文章页 / 购买页都不挂 -->
+    {(Astro.url.pathname.replace(/\/+$/, "") || "/") === "/about" && <Guestbook mode="tab" />}
     <script>
       import "@/scripts/theme";
     </script>

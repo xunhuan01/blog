@@ -19,6 +19,8 @@ type Props = {
 const { mode = "tab" } = Astro.props as Props;
 
 const devApi = "http://127.0.0.1:4401";
+// 线上留空 → 走同源 /api/guestbook（香港那台 nginx 反代到本地 4401）。
+// 要挂到别的域名时再配 PUBLIC_GUESTBOOK_API。
 const prodApi = import.meta.env.PUBLIC_GUESTBOOK_API || "";
 const apiBase = import.meta.env.DEV ? devApi : prodApi;
 const isTab = mode === "tab";
@@ -628,9 +630,9 @@ const isTab = mode === "tab";
   }
 
   /* 2026-11-26：书签常驻在右边缘，窄屏上会把正文最后几个字压住。
-     给正文让出 26px（书签宽度），桌面端内容本来就居中、不用让。 */
+     只给挂着书签的那一页（聊天页）让出 26px，别的页面不受影响。 */
   @media (max-width: 639px) {
-    #page-shell {
+    body:has(#gb.gb--tab) #page-shell {
       padding-right: 26px;
     }
   }
@@ -760,23 +762,23 @@ const isTab = mode === "tab";
     }
 
     async function load() {
-      if (api) {
-        try {
-          const r = await fetch(api + "/api/guestbook?limit=500", { cache: "no-store" });
-          if (r.ok) {
-            const d = await r.json();
-            const arr = Array.isArray(d?.items) ? d.items : [];
-            items = arr.map((it: any) => ({
-              id: Number(it.id) || 0,
-              name: String(it.name || "访客"),
-              text: String(it.text || ""),
-              ts: Number(it.ts) || 0,
-            }));
-            render();
-            return;
-          }
-        } catch {}
-      }
+      // api 为空时走同源（线上就是这条），失败再退到本地存储
+      const endpoint = (api || "") + "/api/guestbook";
+      try {
+        const r = await fetch(endpoint + "?limit=500", { cache: "no-store" });
+        if (r.ok) {
+          const d = await r.json();
+          const arr = Array.isArray(d?.items) ? d.items : [];
+          items = arr.map((it: any) => ({
+            id: Number(it.id) || 0,
+            name: String(it.name || "访客"),
+            text: String(it.text || ""),
+            ts: Number(it.ts) || 0,
+          }));
+          render();
+          return;
+        }
+      } catch {}
       // 兜底：浏览器本地存储（换设备看不到，但编号照样递增）
       items = readLocal();
       render();
@@ -795,18 +797,30 @@ const isTab = mode === "tab";
       if (msgEl) msgEl.textContent = "";
 
       try {
-        if (api) {
-          const r = await fetch(api + "/api/guestbook", {
+        // 先试后端（线上就是同源 /api/guestbook）；只有网络不通才落本地
+        let saved: Item | null = null;
+        try {
+          const r = await fetch((api || "") + "/api/guestbook", {
             method: "POST",
             headers: { "content-type": "application/json" },
             // 只发内容：昵称由后端随机分配，前端不给填
             body: JSON.stringify({ text }),
           });
           const d = await r.json().catch(() => null);
-          if (!r.ok) throw new Error((d && d.error) || "提交失败");
-          const it = d.item as Item;
-          items.push({ ...it, id: Number(it.id), ts: Number(it.ts) || Date.now() });
-          myId = Number(it.id);
+          if (r.ok && d && d.item) {
+            const it = d.item as Item;
+            saved = { ...it, id: Number(it.id), ts: Number(it.ts) || Date.now() };
+          } else if (d && d.error) {
+            throw new Error(String(d.error)); // 服务端明确拒绝（限流等），照实提示
+          }
+        } catch (e: any) {
+          const msg = String(e?.message || "");
+          if (!/Failed to fetch|Load failed|NetworkError|fetch/i.test(msg)) throw e;
+        }
+
+        if (saved) {
+          items.push(saved);
+          myId = saved.id;
         } else {
           const maxId = items.reduce((m, it) => Math.max(m, Number(it.id) || 0), 0);
           const it: Item = { id: maxId + 1, name: localName(), text, ts: Date.now() };
