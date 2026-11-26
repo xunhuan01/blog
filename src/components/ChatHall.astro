@@ -1,4 +1,13 @@
 ---
+import Guestbook from "@/components/Guestbook.astro";
+
+// guestbook="slot" 时由调用方（预览页）自己塞入口形态，正式页保持内置那张卡
+// guestbook="cell" 时塞进会员群/客服那一行，当第三格
+// 2026-11-26 用户定方案 F：留言板改成挂全站的右边缘书签（见 Layout），这里默认不再渲染
+// preview=true 时跳过构建期的外部接口抓取（预览页专供，避免 dev 下排队卡死）
+type Props = { guestbook?: "none" | "embed" | "slot" | "cell"; preview?: boolean };
+const { guestbook = "none", preview = false } = Astro.props as Props;
+
 // 聊天大厅（2026-09-21 改版：资源墙做成约 1/3 屏的大卡片，下面两张并排小卡，整体不再是一排同样的列表）
 const HALL = {
   // 2026-11-25 用户定：资料墙整体搬进 MiniChat 主页（内容 + 会员锁都在那边），
@@ -25,22 +34,27 @@ let wallUpdates = FALLBACK_UPDATES;
 // 一个字的聊天内容都不露。构建时先抓一次拿到时间戳写进 HTML（data-ts），
 // 页面打开时由脚本换算成「X 小时前」并刷新一次接口 —— 所以这个时间永远是准的。
 let memberActTs = 0;
-try {
-  const acM = new AbortController();
-  const tM = setTimeout(() => acM.abort(), 4000);
-  const resM = await fetch("https://chat.waiwei.top/api/member-preview", {
-    signal: acM.signal,
-    cache: "no-store",
-  });
-  clearTimeout(tM);
-  if (resM.ok) {
-    const dM = await resM.json();
-    if (dM && dM.lastTime) memberActTs = Number(dM.lastTime) || 0;
-    // 兼容旧结构（服务端未更新的那几天仍回 {items:[{time}]}）
-    else if (dM && Array.isArray(dM.items) && dM.items.length) memberActTs = Number(dM.items[0].time) || 0;
+// 2026-11-26：预览页（preview=true）跳过下面两段外部请求。
+// dev 下这两段是串行阻塞的（各 4 秒超时），快速来回切页面会排长队，
+// 表现出来就是页面卡住、只剩一片灰。线上是构建时抓一次，没有这个问题。
+if (!preview) {
+  try {
+    const acM = new AbortController();
+    const tM = setTimeout(() => acM.abort(), 4000);
+    const resM = await fetch("https://chat.waiwei.top/api/member-preview", {
+      signal: acM.signal,
+      cache: "no-store",
+    });
+    clearTimeout(tM);
+    if (resM.ok) {
+      const dM = await resM.json();
+      if (dM && dM.lastTime) memberActTs = Number(dM.lastTime) || 0;
+      // 兼容旧结构（服务端未更新的那几天仍回 {items:[{time}]}）
+      else if (dM && Array.isArray(dM.items) && dM.items.length) memberActTs = Number(dM.items[0].time) || 0;
+    }
+  } catch (e) {
+    // 抓不到就不显示时间（卡片上仍留「· 有人发言」）
   }
-} catch (e) {
-  // 抓不到就不显示时间（卡片上仍留「· 有人发言」）
 }
 // 「最近更新」文字钩子（2026-10-18 用户要求：上锁帖也要能预览出前两行）。
 // 说明：/api/wall-updates 目前对上锁帖只回「🔒 会员内容 📷」，等于钩子失效；
@@ -64,36 +78,38 @@ function hookText(p: any) {
   if (!t) return "会员专享";
   return video ? t + " 🎬" : hasMedia ? t + " 📷" : t;
 }
-try {
-  const ac = new AbortController();
-  const t = setTimeout(() => ac.abort(), 4000);
-  const res = await fetch("https://chat.waiwei.top/api/posts", {
-    signal: ac.signal,
-    cache: "no-store",
-  });
-  clearTimeout(t);
-  if (res.ok) {
-    const data = await res.json();
-    const arr = Array.isArray(data) ? data : data && Array.isArray(data.items) ? data.items : [];
-    if (arr.length) {
-      wallUpdates = arr.slice(0, 3).map((p: any) => ({ time: p && p.time, text: hookText(p) }));
-    }
-  }
-} catch (e) {
+if (!preview) {
   try {
-    const ac2 = new AbortController();
-    const t2 = setTimeout(() => ac2.abort(), 4000);
-    const res2 = await fetch("https://chat.waiwei.top/api/wall-updates", {
-      signal: ac2.signal,
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), 4000);
+    const res = await fetch("https://chat.waiwei.top/api/posts", {
+      signal: ac.signal,
       cache: "no-store",
     });
-    clearTimeout(t2);
-    if (res2.ok) {
-      const d2 = await res2.json();
-      if (d2 && Array.isArray(d2.items) && d2.items.length) wallUpdates = d2.items.slice(0, 3);
+    clearTimeout(t);
+    if (res.ok) {
+      const data = await res.json();
+      const arr = Array.isArray(data) ? data : data && Array.isArray(data.items) ? data.items : [];
+      if (arr.length) {
+        wallUpdates = arr.slice(0, 3).map((p: any) => ({ time: p && p.time, text: hookText(p) }));
+      }
     }
-  } catch (e2) {
-    // 两次都抓不到 → 保持 FALLBACK_UPDATES
+  } catch (e) {
+    try {
+      const ac2 = new AbortController();
+      const t2 = setTimeout(() => ac2.abort(), 4000);
+      const res2 = await fetch("https://chat.waiwei.top/api/wall-updates", {
+        signal: ac2.signal,
+        cache: "no-store",
+      });
+      clearTimeout(t2);
+      if (res2.ok) {
+        const d2 = await res2.json();
+        if (d2 && Array.isArray(d2.items) && d2.items.length) wallUpdates = d2.items.slice(0, 3);
+      }
+    } catch (e2) {
+      // 两次都抓不到 → 保持 FALLBACK_UPDATES
+    }
   }
 }
 // 会员群活跃提示的构建时文案（页面打开后由脚本按当前时刻刷新，所以永远准；
@@ -158,8 +174,8 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
       </div>
     </a>
 
-    <!-- 会员群 / 在线客服：两个方格并排 -->
-    <div class="hall-cells">
+    <!-- 会员群 / 在线客服：两个方格并排（cell 模式下变三格，第三格放留言板） -->
+    <div class:list={["hall-cells", guestbook === "cell" && "hall-cells--3"]}>
       <a href={HALL.member} class="hall-cell">
         <div class="hall-cell__top">
           <span class="hall-icw hall-icw--sm">
@@ -182,10 +198,19 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
           </span>
         </div>
         <!-- 2026-11-25：线路一/线路二合并成这一个入口（MiniChat），卡片结构与「会员群」一致 -->
+        <!-- 2026-11-26 用户改：副标题「客服在线」不知道在说什么，换成动作说明 -->
         <div class="hall-cell__nm">在线客服</div>
-        <div class="hall-cell__sub">客服在线</div>
+        <div class="hall-cell__sub">点开即聊</div>
       </a>
+
+      <!-- 第三格形态：留言板直接排在两张卡右边 -->
+      {guestbook === "cell" && <slot name="guestbook" />}
     </div>
+
+    <!-- 留言板（2026-11-26 新增）：不进群也能留话；编号由后端按提交顺序自动分配
+         预览页传 guestbook="slot"，把入口形态交给页面自己填 -->
+    {guestbook === "embed" && <Guestbook mode="embed" />}
+    {guestbook === "slot" && <slot name="guestbook" />}
 
     <!-- 安装到桌面（PWA）：居中一行，不再 fixed 钉在底部 -->
     <div id="install-wrap" class="hall-install">
@@ -363,6 +388,15 @@ const wallNewestLabel = fmtBeijing(wallUpdates[0] && wallUpdates[0].time);
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+  }
+  /* 2026-11-26：留言板当第三格时一行塞三张（420px 栏里每格约 132px） */
+  .hall-cells--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .hall-cells--3 .hall-cell {
+    min-height: 126px;
+    padding: 13px;
   }
   .hall-cell {
     display: flex;

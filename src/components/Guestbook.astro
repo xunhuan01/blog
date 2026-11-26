@@ -1,0 +1,883 @@
+---
+/**
+ * 留言板（2026-11-26）
+ *
+ * 三种形态：
+ *   mode="tab"   → 屏幕右边缘一枚竖排书签，靠下（手机拇指够得到），点开是底部抽屉。
+ *                  这是选定的方案 F，挂在 Layout 上，全站可见。
+ *   mode="page"  → 独立页 /guestbook/ 的完整列表
+ *   mode="embed" → 内嵌卡片（保留备用，正式聊天页已不再放）
+ *
+ * 两条铁规矩：
+ *   1. 昵称不给访客填 —— 后端随机分配「访客 + 四位数」，前端连输入框都没有。
+ *   2. 编号由后端 seq 自增分配，删号不复用。
+ */
+type Props = {
+  mode?: "tab" | "page" | "embed";
+};
+
+const { mode = "tab" } = Astro.props as Props;
+
+const devApi = "http://127.0.0.1:4401";
+const prodApi = import.meta.env.PUBLIC_GUESTBOOK_API || "";
+const apiBase = import.meta.env.DEV ? devApi : prodApi;
+const isTab = mode === "tab";
+---
+
+{
+  isTab ? (
+    <section id="gb" class="gb gb--tab" data-gb data-mode="tab" data-api={apiBase}>
+      <button type="button" class="gbtab" data-open aria-label="打开留言板">
+        <span class="gbtab__title">留言板</span>
+        <span class="gbtab__n">
+          <i data-count>0</i>
+        </span>
+      </button>
+
+      <div class="gbsheet" data-layer aria-hidden="true">
+        <div class="gbsheet__mask" data-close />
+        <div class="gbsheet__panel" role="dialog" aria-label="留言板">
+          <div class="gbsheet__head">
+            <span class="gbsheet__grab" data-close />
+            <span class="gbsheet__title">留言板</span>
+            <span class="gbsheet__count">
+              <i data-count>0</i> 条
+            </span>
+            <button type="button" class="gbsheet__x" data-close aria-label="关闭">
+              ×
+            </button>
+          </div>
+          <ul class="gb-list" data-list aria-live="polite">
+            <li class="gb-empty">正在读取…</li>
+          </ul>
+          <form class="gb-bar" data-form autocomplete="off">
+            <input
+              class="gb-bar__text"
+              name="text"
+              type="text"
+              maxlength="500"
+              placeholder="写一句…"
+              aria-label="留言内容"
+            />
+            <button class="gb-bar__go" type="submit">
+              发
+            </button>
+          </form>
+          <p class="gb-msg" data-msg role="status" aria-live="polite" />
+        </div>
+      </div>
+    </section>
+  ) : (
+    <section
+      id="gb"
+      class:list={["gb", mode === "page" ? "gb--page" : "gb--embed"]}
+      data-gb
+      data-mode={mode}
+      data-api={apiBase}
+    >
+      <header class="gb-head">
+        <div class="gb-head__left">
+          <span class="gb-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-3.7-.7L3 21l1.7-4.6A8.4 8.4 0 0 1 3.6 11.5 8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z" />
+            </svg>
+          </span>
+          <div>
+            <h2 class="gb-title">留言板</h2>
+            <div class="gb-dsc">想说什么都行，我都会看</div>
+          </div>
+        </div>
+        <span class="gb-count">
+          <i data-count>0</i> 条
+        </span>
+      </header>
+
+      <form class="gb-form" data-form autocomplete="off" novalidate>
+        <div class="gb-textwrap">
+          <textarea
+            class="gb-input gb-input--text"
+            name="text"
+            rows="3"
+            maxlength="500"
+            placeholder="写点什么…"
+            aria-label="留言内容"
+          />
+          <span class="gb-num" data-num>0/500</span>
+        </div>
+        <div class="gb-bar-row">
+          <span class="gb-next">编号自动分配</span>
+          <button class="gb-send" type="submit">
+            发送
+          </button>
+        </div>
+        <p class="gb-msg" data-msg role="status" aria-live="polite" />
+      </form>
+
+      <ul class="gb-list" data-list aria-live="polite">
+        <li class="gb-empty">正在读取…</li>
+      </ul>
+
+      {mode === "embed" && (
+        <a class="gb-more" href="/guestbook/" data-astro-prefetch="tap">
+          查看全部留言 →
+        </a>
+      )}
+    </section>
+  )
+}
+
+<style is:global>
+  /* 选择器统一挂在 #gb 下：列表项由脚本生成，拿不到 Astro 的 scoped 属性 */
+  #gb {
+    --gb-line: #e3e3e0;
+    --gb-soft: #f1f1ef;
+  }
+
+  /* ── tab：右边缘竖排书签（靠下，手机好按）── */
+  #gb .gbtab {
+    position: fixed;
+    right: 0;
+    /* 132 = 底栏 56 + 首页右下那颗标签球（right14/bottom72，直径约48）+ 12px 间距，
+       再往下会和标签球叠在一起 */
+    bottom: 132px;
+    z-index: 46;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 13px 6px 10px;
+    background: #fff;
+    border: 1px solid #e0e0dc;
+    border-right: 0;
+    border-radius: 9px 0 0 9px;
+    box-shadow: -3px 2px 12px rgba(25, 25, 25, 0.07);
+    cursor: pointer;
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+  #gb .gbtab:hover {
+    transform: translateX(-2px);
+    box-shadow: -4px 2px 16px rgba(25, 25, 25, 0.12);
+  }
+  #gb .gbtab__title {
+    writing-mode: vertical-rl;
+    font-family: "Songti SC", "STSong", "SimSun", serif;
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    color: #1c1c1b;
+  }
+  #gb .gbtab__n {
+    font-size: 9.5px;
+    line-height: 1;
+    color: #a3a3a0;
+    font-variant-numeric: tabular-nums;
+  }
+  #gb .gbtab__n i,
+  #gb [data-count] {
+    font-style: normal;
+  }
+
+  /* tab 的抽屉 */
+  #gb .gbsheet {
+    position: fixed;
+    inset: 0;
+    z-index: 91;
+    display: none;
+  }
+  #gb .gbsheet.is-on {
+    display: block;
+  }
+  #gb .gbsheet__mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(25, 25, 25, 0.3);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 0.22s ease;
+  }
+  #gb .gbsheet.is-on .gbsheet__mask {
+    opacity: 1;
+  }
+  #gb .gbsheet__panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0 auto;
+    max-width: 520px;
+    max-height: 76vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0 16px calc(10px + env(safe-area-inset-bottom));
+    background: #fafaf9;
+    border-radius: 14px 14px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.26s cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  #gb .gbsheet.is-on .gbsheet__panel {
+    transform: translateY(0);
+  }
+  #gb .gbsheet__head {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 0 9px;
+    border-bottom: 1px solid #eeede9;
+  }
+  #gb .gbsheet__grab {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 34px;
+    height: 3px;
+    border-radius: 3px;
+    background: #dcdcd8;
+    cursor: pointer;
+  }
+  #gb .gbsheet__title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #191919;
+  }
+  #gb .gbsheet__count {
+    font-size: 10.5px;
+    color: #a3a3a0;
+    font-variant-numeric: tabular-nums;
+  }
+  #gb .gbsheet__x {
+    margin-left: auto;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    line-height: 1;
+    color: #8f8f8c;
+    background: none;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  #gb .gbsheet__x:hover {
+    background: #f1f1ef;
+    color: #191919;
+  }
+
+  /* 抽屉底部一条窄输入：只有内容 + 发送，没有昵称 */
+  #gb .gb-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding-top: 10px;
+    margin-top: auto;
+    border-top: 1px solid #eeede9;
+  }
+  #gb .gb-bar__text {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #191919;
+    background: #fff;
+    border: 1px solid #e3e3e0;
+    border-radius: 9px;
+    padding: 8px 10px;
+    outline: none;
+  }
+  #gb .gb-bar__text::placeholder {
+    color: #b0b0ac;
+  }
+  #gb .gb-bar__text:focus {
+    border-color: #bdbdb8;
+  }
+  #gb .gb-bar__go {
+    flex-shrink: 0;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #fff;
+    background: #1c1c1b;
+    border: 0;
+    border-radius: 9px;
+    padding: 9px 12px;
+    cursor: pointer;
+  }
+  #gb .gb-bar__go:hover {
+    background: #000;
+  }
+  #gb .gb-bar__go[disabled] {
+    opacity: 0.4;
+  }
+
+  /* ── embed / page：卡片形态（保留） ── */
+  #gb.gb--embed,
+  #gb.gb--page {
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid var(--gb-line);
+    box-shadow:
+      0 1px 2px rgba(25, 25, 25, 0.04),
+      0 8px 22px rgba(25, 25, 25, 0.07);
+  }
+  #gb.gb--embed {
+    padding: 16px;
+    border-radius: 20px;
+  }
+  #gb.gb--page {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 20px 18px 24px;
+    border-radius: 20px;
+  }
+  #gb *,
+  #gb *::before,
+  #gb *::after {
+    box-sizing: border-box;
+  }
+
+  #gb .gb-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  #gb .gb-head__left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  #gb .gb-ic {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gb-soft);
+    color: #3a3a38;
+  }
+  #gb .gb-ic svg {
+    width: 19px;
+    height: 19px;
+  }
+  #gb .gb-title {
+    margin: 0;
+    font-size: 15.5px;
+    line-height: 1.35;
+    font-weight: 700;
+    color: #191919;
+    letter-spacing: -0.01em;
+  }
+  #gb .gb-dsc {
+    margin-top: 2px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: #8f8f8c;
+  }
+  #gb .gb-count {
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 11.5px;
+    color: #8f8f8c;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  #gb .gb-form {
+    margin-top: 14px;
+  }
+  #gb .gb-input {
+    width: 100%;
+    font: inherit;
+    font-size: 16px; /* iOS 下 <16px 会自动放大页面 */
+    line-height: 1.55;
+    color: #191919;
+    background: #fbfbfa;
+    border: 1px solid var(--gb-line);
+    border-radius: 12px;
+    padding: 9px 11px;
+    outline: none;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+  #gb .gb-input::placeholder {
+    color: #a3a3a0;
+  }
+  #gb .gb-input:focus {
+    border-color: #bdbdb8;
+    background: #fff;
+  }
+  #gb .gb-textwrap {
+    position: relative;
+  }
+  #gb .gb-input--text {
+    display: block;
+    resize: none;
+    min-height: 76px;
+    padding-bottom: 22px;
+  }
+  #gb .gb-num {
+    position: absolute;
+    right: 10px;
+    bottom: 7px;
+    font-size: 10.5px;
+    color: #b0b0ac;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+  #gb .gb-bar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  #gb .gb-next {
+    font-size: 11.5px;
+    color: #8f8f8c;
+    font-variant-numeric: tabular-nums;
+  }
+  #gb .gb-send {
+    flex-shrink: 0;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: #1c1c1b;
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 18px;
+    cursor: pointer;
+    transition:
+      opacity 0.15s ease,
+      transform 0.12s ease;
+  }
+  #gb .gb-send:hover {
+    background: #000;
+  }
+  #gb .gb-send:active {
+    transform: scale(0.97);
+  }
+  #gb .gb-send[disabled] {
+    opacity: 0.45;
+    cursor: default;
+  }
+  #gb .gb-msg {
+    margin: 7px 0 0;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #8a6a1f;
+    min-height: 0;
+  }
+  #gb .gb-msg:empty {
+    display: none;
+  }
+
+  /* ── 列表（三种模式共用）── */
+  #gb .gb-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    border-top: 1px solid #f2f2f0;
+  }
+  #gb .gbsheet .gb-list {
+    flex: 1;
+    min-height: 110px;
+    max-height: 46vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #dcdcd8 transparent;
+  }
+  #gb .gbsheet .gb-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  #gb .gbsheet .gb-list::-webkit-scrollbar-thumb {
+    background: #dcdcd8;
+    border-radius: 2px;
+  }
+  #gb.gb--embed .gb-list {
+    max-height: 272px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #dcdcd8 transparent;
+  }
+  #gb.gb--embed .gb-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  #gb.gb--embed .gb-list::-webkit-scrollbar-thumb {
+    background: #dcdcd8;
+    border-radius: 2px;
+  }
+  #gb.gb--embed .gb-list--scroll {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 34px), transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 34px), transparent);
+  }
+  #gb .gb-list > li {
+    padding: 11px 0;
+    border-bottom: 1px solid #f2f2f0;
+  }
+  #gb .gb-list > li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  #gb .gb-empty {
+    color: #a3a3a0;
+    font-size: 12.5px;
+    text-align: center;
+    padding: 16px 0 !important;
+    border-bottom: 0 !important;
+  }
+  #gb .gb-item__top {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+  }
+  #gb .gb-id {
+    flex-shrink: 0;
+    font-size: 10.5px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #8f8f8c;
+    background: var(--gb-soft);
+    border-radius: 5px;
+    padding: 3px 5px;
+    font-variant-numeric: tabular-nums;
+  }
+  #gb .gb-item--mine .gb-id {
+    color: #8a7a5e;
+    background: #fdf9ef;
+    border: 1px solid #ded6c6;
+    padding: 2px 4px;
+  }
+  #gb .gb-nm {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #3a3a38;
+    max-width: 11em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #gb .gb-when {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 10.5px;
+    color: #b0b0ac;
+    font-variant-numeric: tabular-nums;
+  }
+  #gb .gb-tx {
+    margin: 5px 0 0 0;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #4a4a48;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  #gb .gb-item--new {
+    animation: gb-pop 0.5s ease;
+  }
+  @keyframes gb-pop {
+    0% {
+      background: #fdf9ef;
+    }
+    100% {
+      background: transparent;
+    }
+  }
+  #gb .gb-more {
+    display: block;
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid #f2f2f0;
+    text-align: center;
+    font-size: 12px;
+    color: #8f8f8c;
+    text-decoration: none;
+  }
+  #gb .gb-more:hover {
+    color: #191919;
+  }
+
+  @media (min-width: 700px) {
+    /* 桌面没有底部标签栏，书签可以再贴低一点 */
+    #gb .gbtab {
+      bottom: 52px;
+      padding: 14px 7px 11px;
+    }
+    #gb.gb--page {
+      padding: 26px 24px 28px;
+    }
+    #gb .gb-input,
+    #gb .gb-bar__text {
+      font-size: 14px;
+    }
+  }
+
+  /* 2026-11-26：书签常驻在右边缘，窄屏上会把正文最后几个字压住。
+     给正文让出 26px（书签宽度），桌面端内容本来就居中、不用让。 */
+  @media (max-width: 639px) {
+    #page-shell {
+      padding-right: 26px;
+    }
+  }
+</style>
+
+<script>
+  type Item = { id: number; name: string; text: string; ts: number };
+
+  const LOCAL_KEY = "guestbook:local";
+  const SHOW_IN_EMBED = 8;
+
+  // 本地兜底模式下的随机昵称（后端也有同样一份，这里只在不接后端时用）
+  function localName() {
+    return "访客" + (1000 + Math.floor(Math.random() * 9000));
+  }
+
+  function esc(s: unknown) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function fmtWhen(ts: number) {
+    if (!ts) return "";
+    const diff = (Date.now() - ts) / 1000;
+    if (diff < 60) return "刚刚";
+    if (diff < 3600) return Math.floor(diff / 60) + "分钟前";
+    if (diff < 86400) return Math.floor(diff / 3600) + "小时前";
+    if (diff < 86400 * 8) return Math.floor(diff / 86400) + "天前";
+    const d = new Date(ts);
+    const p = (n: number) => String(n).padStart(2, "0");
+    return p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+
+  const pad = (id: number) => "#" + String(id).padStart(3, "0");
+
+  function readLocal(): Item[] {
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+  function writeLocal(items: Item[]) {
+    try {
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(items.slice(-200)));
+    } catch {}
+  }
+
+  function initOne(root: HTMLElement) {
+    if (root.dataset.gbReady === "1") return; // ClientRouter 下脚本会重跑，别重复绑定
+    root.dataset.gbReady = "1";
+
+    const api = (root.dataset.api || "").replace(/\/+$/, "");
+    const mode = root.dataset.mode || "embed";
+    const isPage = mode === "page";
+    const isTab = mode === "tab";
+    const q = <T extends Element>(sel: string) => root.querySelector<T>(sel);
+
+    const form = q<HTMLFormElement>("[data-form]");
+    const textEl = q<HTMLInputElement | HTMLTextAreaElement>("[name='text']");
+    const numEl = q<HTMLElement>("[data-num]");
+    const nextEl = q<HTMLElement>(".gb-next");
+    const sendEl = q<HTMLButtonElement>("button[type='submit']");
+    const msgEl = q<HTMLElement>("[data-msg]");
+    const listEl = q<HTMLElement>("[data-list]");
+    const moreEl = q<HTMLAnchorElement>(".gb-more");
+    const layer = q<HTMLElement>("[data-layer]");
+    if (!form || !textEl || !listEl) return;
+
+    let items: Item[] = [];
+    let myId = 0;
+    let busy = false;
+
+    function render() {
+      // 最新的在上面；编号仍是各自真实编号
+      const ordered = [...items].sort((a, b) => b.id - a.id);
+      const shown = isPage || isTab ? ordered : ordered.slice(0, SHOW_IN_EMBED);
+
+      root.querySelectorAll<HTMLElement>("[data-count]").forEach(el => {
+        el.textContent = String(items.length);
+      });
+
+      if (!shown.length) {
+        listEl.innerHTML = '<li class="gb-empty">还没有人留言，你可以当第一个</li>';
+      } else {
+        listEl.innerHTML = shown
+          .map(
+            (it, i) => `
+        <li class="gb-list-item${it.id === myId ? " gb-item--mine" : ""}${i === 0 && it.id === myId ? " gb-item--new" : ""}">
+          <div class="gb-item__top">
+            <span class="gb-id">${pad(it.id)}</span>
+            <span class="gb-nm">${esc(it.name || "访客")}</span>
+            <span class="gb-when">${esc(fmtWhen(it.ts))}</span>
+          </div>
+          <p class="gb-tx">${esc(it.text)}</p>
+        </li>`
+          )
+          .join("");
+      }
+
+      if (moreEl) {
+        const rest = items.length - shown.length;
+        moreEl.textContent = rest > 0 ? `查看全部 ${items.length} 条留言 →` : "查看全部留言 →";
+      }
+
+      if (nextEl) {
+        const maxId = items.reduce((m, it) => Math.max(m, Number(it.id) || 0), 0);
+        nextEl.textContent = items.length
+          ? `编号自动分配，下一条是 ${pad(maxId + 1)}`
+          : "编号自动分配，从 #001 开始";
+      }
+
+      if (mode === "embed") {
+        requestAnimationFrame(() => {
+          listEl!.classList.toggle(
+            "gb-list--scroll",
+            listEl!.scrollHeight > listEl!.clientHeight + 2
+          );
+        });
+      }
+    }
+
+    async function load() {
+      if (api) {
+        try {
+          const r = await fetch(api + "/api/guestbook?limit=500", { cache: "no-store" });
+          if (r.ok) {
+            const d = await r.json();
+            const arr = Array.isArray(d?.items) ? d.items : [];
+            items = arr.map((it: any) => ({
+              id: Number(it.id) || 0,
+              name: String(it.name || "访客"),
+              text: String(it.text || ""),
+              ts: Number(it.ts) || 0,
+            }));
+            render();
+            return;
+          }
+        } catch {}
+      }
+      // 兜底：浏览器本地存储（换设备看不到，但编号照样递增）
+      items = readLocal();
+      render();
+    }
+
+    async function submit() {
+      if (busy) return;
+      const text = (textEl!.value || "").trim();
+      if (!text) {
+        if (msgEl) msgEl.textContent = "先写点什么吧";
+        textEl!.focus();
+        return;
+      }
+      busy = true;
+      sendEl?.setAttribute("disabled", "true");
+      if (msgEl) msgEl.textContent = "";
+
+      try {
+        if (api) {
+          const r = await fetch(api + "/api/guestbook", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            // 只发内容：昵称由后端随机分配，前端不给填
+            body: JSON.stringify({ text }),
+          });
+          const d = await r.json().catch(() => null);
+          if (!r.ok) throw new Error((d && d.error) || "提交失败");
+          const it = d.item as Item;
+          items.push({ ...it, id: Number(it.id), ts: Number(it.ts) || Date.now() });
+          myId = Number(it.id);
+        } else {
+          const maxId = items.reduce((m, it) => Math.max(m, Number(it.id) || 0), 0);
+          const it: Item = { id: maxId + 1, name: localName(), text, ts: Date.now() };
+          items.push(it);
+          writeLocal(items);
+          myId = it.id;
+        }
+        textEl!.value = "";
+        if (numEl) numEl.textContent = "0/500";
+        render();
+        if (msgEl) msgEl.textContent = `已贴到留言板 · 你是 ${pad(myId)}`;
+        listEl.scrollTop = 0;
+      } catch (e: any) {
+        if (msgEl) msgEl.textContent = e?.message ? String(e.message) : "没发出去，稍后再试";
+      } finally {
+        busy = false;
+        sendEl?.removeAttribute("disabled");
+      }
+    }
+
+    // tab：点书签开抽屉，点遮罩/把手/× 收起
+    if (isTab && layer) {
+      q<HTMLElement>("[data-open]")?.addEventListener("click", () => {
+        layer.classList.add("is-on");
+        layer.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+          if (window.innerWidth > 640) textEl.focus();
+        }, 240);
+      });
+      root.querySelectorAll<HTMLElement>("[data-close]").forEach(el => {
+        el.addEventListener("click", () => {
+          layer.classList.remove("is-on");
+          layer.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        });
+      });
+      document.addEventListener("keydown", e => {
+        if (e.key === "Escape" && layer.classList.contains("is-on")) {
+          layer.classList.remove("is-on");
+          layer.setAttribute("aria-hidden", "true");
+          document.body.style.overflow = "";
+        }
+      });
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      void submit();
+    });
+    // 输入框里按 Enter 直接发（聊天窗的习惯），Shift+Enter 换行
+    textEl.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        void submit();
+      }
+    });
+    textEl.addEventListener("input", () => {
+      if (numEl) numEl.textContent = (textEl.value || "").length + "/500";
+    });
+
+    void load();
+  }
+
+  function boot() {
+    document.querySelectorAll<HTMLElement>("[data-gb]").forEach(initOne);
+  }
+
+  boot();
+  if (!(window as any).__gbLoadBound) {
+    (window as any).__gbLoadBound = true;
+    document.addEventListener("astro:page-load", boot);
+  }
+</script>

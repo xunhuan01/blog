@@ -6,6 +6,7 @@ import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { getAssetPath } from "@/utils/withBase";
 import config from "@/config";
 import NavProgress from "@/components/NavProgress.astro";
+import Guestbook from "@/components/Guestbook.astro";
 import "@/styles/global.css";
 
 type Props = {
@@ -13,6 +14,11 @@ type Props = {
   description?: string;
   ogImage?: string;
   canonicalURL?: string;
+  /**
+   * 2026-11-26：预览用的开关 —— 为 true 时在桌面侧栏 / 手机底栏多出「留言」一项。
+   * 默认 false，线上外观不受影响；选定了再改成常开。
+   */
+  navGuestbook?: boolean;
 };
 
 const { site } = config;
@@ -22,6 +28,7 @@ const {
   description = site.description,
   ogImage = resolveDefaultOgImagePath(config),
   canonicalURL = new URL(Astro.url.pathname, Astro.site).href,
+  navGuestbook = false,
 } = Astro.props;
 
 const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url);
@@ -159,6 +166,12 @@ const rssHref = getRelativeLocaleUrl(
           <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span class="text-sm font-medium">购买</span>
         </a>
+        {navGuestbook && (
+          <a href="/guestbook/" data-astro-prefetch="viewport" class="flex flex-row items-center gap-2 text-sm text-foreground/70 hover:text-accent transition-colors justify-center">
+            <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-3.7-.7L3 21l1.7-4.6A8.4 8.4 0 0 1 3.6 11.5 8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+            <span class="text-sm font-medium">留言</span>
+          </a>
+        )}
       </nav>
       <div class="mt-auto flex flex-col items-center gap-4">
       </div>
@@ -179,6 +192,12 @@ const rssHref = getRelativeLocaleUrl(
           <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           <span>购买</span>
         </a>
+        {navGuestbook && (
+          <a href="/guestbook/" data-astro-prefetch="viewport" class:list={["flex flex-col items-center gap-0.5 text-xs", Astro.url.pathname === "/guestbook/" ? "text-accent font-semibold" : "text-foreground/70"]}>
+            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-3.7-.7L3 21l1.7-4.6A8.4 8.4 0 0 1 3.6 11.5 8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z"/></svg>
+            <span>留言</span>
+          </a>
+        )}
       </div>
     </nav>
 
@@ -187,6 +206,8 @@ const rssHref = getRelativeLocaleUrl(
       <slot />
     </div>
     <NavProgress />
+    <!-- 留言板（2026-11-26 用户定方案 F）：右边缘竖排书签，靠下，全站可见；点开是底部抽屉 -->
+    <Guestbook mode="tab" />
     <script>
       import "@/scripts/theme";
     </script>
