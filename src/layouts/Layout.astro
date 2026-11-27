@@ -367,16 +367,18 @@ const rssHref = getRelativeLocaleUrl(
             var href = a.getAttribute("href");
             if (!href || href.charAt(0) === "#" || /^[a-z]+:/i.test(href)) return;
 
+            var isShell = !!document.getElementById("chat-panel");
+            var targetId = null;
             var same = false;
-            if (document.getElementById("chat-panel")) {
+            if (isShell) {
               // 首页 App 外壳：目标面板已经亮着 = 就是"当前所在"
-              var id =
+              targetId =
                 href === "/about/"
                   ? "chat-panel"
                   : href === "/purchase/"
                     ? "purchase-panel"
                     : "tags-panel";
-              var panel = document.getElementById(id);
+              var panel = document.getElementById(targetId);
               same = !!panel && panel.style.display !== "none";
             } else {
               same = norm(location.pathname) === norm(new URL(href, location.href).pathname);
@@ -385,11 +387,33 @@ const rssHref = getRelativeLocaleUrl(
             if (same) {
               e.preventDefault();
               e.stopPropagation();
+              // 只在这种"点当前 Tab 当刷新"的情况下写标记，加载后读一次就清掉；
+              // 普通跳转（比如从 /about/ 点「文章」）不写，所以不会被拉回别的面板。
+              if (isShell && targetId) {
+                try { sessionStorage.setItem("__panelRestore", targetId); } catch (_) {}
+              }
               location.reload();
             }
           },
           true
         );
+
+        // 整页重载回来后，把面板还原到刚才那一档（标记一次性）
+        function restorePanelOnce() {
+          if (!document.getElementById("chat-panel")) return; // 只在首页外壳里做
+          var want = null;
+          try { want = sessionStorage.getItem("__panelRestore"); } catch (_) {}
+          if (!want) return;
+          try { sessionStorage.removeItem("__panelRestore"); } catch (_) {}
+          if (want === "tags-panel") return; // 默认就是文章，不用切
+          var href = want === "chat-panel" ? "/about/" : want === "purchase-panel" ? "/purchase/" : null;
+          if (!href) return;
+          var link =
+            document.querySelector('aside a[href="' + href + '"]') ||
+            document.querySelector('body > nav a[href="' + href + '"]');
+          if (link) setTimeout(function () { link.click(); }, 0);
+        }
+        restorePanelOnce();
       })();
     </script>
   </body>
