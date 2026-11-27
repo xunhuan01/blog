@@ -301,6 +301,18 @@ const rssHref = getRelativeLocaleUrl(
             if (e.__panelSwitched) return;
             e.__panelSwitched = true;
             const href = link.getAttribute("href");
+            // 2026-11-27（用户要求）：点"当前已在的那个夹"= 整页重新加载一次（PWA 里当刷新用），
+            // 并把面板记下来，加载后回到这一档。放在这里而不是 document 捕获阶段：
+            // 捕获阶段拦不住 ClientRouter，它会先 pushState 成目标地址，导致 reload 到别的页。
+            const wantPanel = href === "/about/" ? "chat-panel" : href === "/purchase/" ? "purchase-panel" : "tags-panel";
+            if (curPanelId === wantPanel) {
+              try { sessionStorage.setItem("__panelRestore", wantPanel); } catch (_) {}
+              // 不能读 location.href 当目标：ClientRouter 的监听可能已经把地址 pushState
+              // 成 /about/ 了，那样刷新会刷到聊天整页。这里只可能是首页外壳，直接回 "/"。
+              const homeUrl = location.origin + "/";
+              setTimeout(() => { location.replace(homeUrl); }, 0);
+              return;
+            }
             PANEL_SCROLL[curPanelId] = readScroll(); // 先记住当前面板滚到哪
             ["tags-panel","chat-panel","purchase-panel"].forEach(id => {
               const el = document.getElementById(id);
@@ -358,45 +370,23 @@ const rssHref = getRelativeLocaleUrl(
         function norm(p) {
           return (p || "/").replace(/\/+$/, "") || "/";
         }
-        document.addEventListener(
-          "click",
-          function (e) {
-            var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
-            if (!a) return;
-            if (!a.closest("aside") && !a.closest("nav")) return; // 只认左侧栏和底部导航
-            var href = a.getAttribute("href");
-            if (!href || href.charAt(0) === "#" || /^[a-z]+:/i.test(href)) return;
-
-            var isShell = !!document.getElementById("chat-panel");
-            var targetId = null;
-            var same = false;
-            if (isShell) {
-              // 首页 App 外壳：目标面板已经亮着 = 就是"当前所在"
-              targetId =
-                href === "/about/"
-                  ? "chat-panel"
-                  : href === "/purchase/"
-                    ? "purchase-panel"
-                    : "tags-panel";
-              var panel = document.getElementById(targetId);
-              same = !!panel && panel.style.display !== "none";
-            } else {
-              same = norm(location.pathname) === norm(new URL(href, location.href).pathname);
-            }
-
-            if (same) {
+        // 只处理独立页（/about/、/purchase/）：点同一个 Tab = 整页重新加载。
+        // 首页三面板的"点当前 Tab 刷新"在 initSPA 里做（捕获阶段拦不住 ClientRouter，
+        // 它会先 pushState 成目标地址，导致 reload 到别的页）。
+        var shell = !!document.getElementById("chat-panel");
+        if (!shell) {
+          document.querySelectorAll("aside a, body > nav a").forEach(function (link) {
+            link.addEventListener("click", function (e) {
+              var href = link.getAttribute("href");
+              if (!href || href.charAt(0) === "#" || /^[a-z]+:/i.test(href)) return;
+              if (norm(location.pathname) !== norm(new URL(href, location.href).pathname)) return;
               e.preventDefault();
-              e.stopPropagation();
-              // 只在这种"点当前 Tab 当刷新"的情况下写标记，加载后读一次就清掉；
-              // 普通跳转（比如从 /about/ 点「文章」）不写，所以不会被拉回别的面板。
-              if (isShell && targetId) {
-                try { sessionStorage.setItem("__panelRestore", targetId); } catch (_) {}
-              }
-              location.reload();
-            }
-          },
-          true
-        );
+              // 同理：用 href 拼出目标地址，别信已经被 pushState 改过的 location
+              const selfUrl = location.origin + new URL(href, location.origin).pathname;
+              setTimeout(function () { location.replace(selfUrl); }, 0);
+            });
+          });
+        }
 
         // 整页重载回来后，把面板还原到刚才那一档（标记一次性）
         function restorePanelOnce() {
@@ -413,7 +403,16 @@ const rssHref = getRelativeLocaleUrl(
             document.querySelector('body > nav a[href="' + href + '"]');
           if (link) setTimeout(function () { link.click(); }, 0);
         }
-        restorePanelOnce();
+
+        // 关键：面板切换的 initSPA 在 <script type="module"> 里（defer 执行），
+        // 而这段是内联同步脚本 —— 直接 now 跑会在 initSPA 绑定之前 click，
+        // 那一跳没人 preventDefault，就会真的导航到 /about/。
+        // 所以等 load 之后再跑（再兜 80ms 保证模块已执行）。
+        function scheduleRestore() {
+          setTimeout(restorePanelOnce, 80);
+        }
+        if (document.readyState === "complete") scheduleRestore();
+        else window.addEventListener("load", scheduleRestore, { once: true });
       })();
     </script>
   </body>
