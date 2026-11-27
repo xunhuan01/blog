@@ -148,10 +148,10 @@ const isTab = mode === "tab";
     --gb-soft: #f1f1ef;
   }
 
-  /* ── tab：右边缘竖排书签（靠下，手机好按）── */
+  /* ── tab：挂在右侧边栏的竖排书签（靠下，手机好按）── */
   #gb .gbtab {
     position: fixed;
-    right: 10px; /* 不贴边：手机最右侧是返回手势区，贴边容易被误触/看不见 */
+    right: 0;
     /* 132 = 底栏 56 + 首页右下那颗标签球（right14/bottom72，直径约48）+ 12px 间距，
        再往下会和标签球叠在一起 */
     bottom: 132px;
@@ -160,39 +160,45 @@ const isTab = mode === "tab";
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 16px 10px 13px;
-    /* 2026-11-27：原来白底细边、贴在空白处几乎看不见 → 改成深墨块（跟资源墙同族），
-       白字 + 实心阴影，一眼能认出是个可点的入口 */
-    background: #1c1c1b;
-    color: #f2f2f0;
-    border: 0;
-    border-radius: 12px;
-    box-shadow:
-      0 2px 6px rgba(25, 25, 25, 0.18),
-      0 10px 24px rgba(25, 25, 25, 0.26);
+    padding: 16px 7px 13px;
+    /* 2026-11-27：回到白底细边的"挂在边上"样式（深色块在手机上太抢） */
+    background: #fff;
+    color: #1c1c1b;
+    border: 1px solid #e0e0dc;
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+    box-shadow: -2px 0 10px rgba(25, 25, 25, 0.06);
     cursor: pointer;
     transition:
       transform 0.18s ease,
       box-shadow 0.18s ease;
   }
+  /* 视觉只有 30px 宽，贴着屏幕边缘在手机上很难点中 →
+     用伪元素把可点区域往左悄悄扩到 ~44px（不改变观感） */
+  #gb .gbtab::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -15px;
+    width: 15px;
+  }
   #gb .gbtab:hover {
-    transform: translateX(-3px);
-    box-shadow:
-      0 4px 10px rgba(25, 25, 25, 0.22),
-      0 14px 30px rgba(25, 25, 25, 0.3);
+    transform: translateX(-2px);
+    box-shadow: -4px 0 16px rgba(25, 25, 25, 0.12);
   }
   #gb .gbtab__title {
     writing-mode: vertical-rl;
     font-family: "Songti SC", "STSong", "SimSun", serif;
-    font-size: 14px;
+    font-size: 13.5px;
     line-height: 1;
     letter-spacing: 0.18em;
-    color: #ffffff;
+    color: #1c1c1b;
   }
   #gb .gbtab__n {
-    font-size: 10.5px;
+    font-size: 10px;
     line-height: 1;
-    color: #b9b9b4;
+    color: #a3a3a0;
     font-variant-numeric: tabular-nums;
   }
   #gb .gbtab__n i,
@@ -654,11 +660,10 @@ const isTab = mode === "tab";
   }
 
   /* 2026-11-26：书签常驻在右边缘，窄屏上会把正文最后几个字压住。
-     只给挂着书签的那一页（聊天页）让位；2026-11-27 书签改成离边 10px、宽约 38，
-     让位从 26 提到 40 才够。 */
+     只给挂着书签的那一页（聊天页）让位；书签视觉宽 30px（热区另算），让 34 就够。 */
   @media (max-width: 639px) {
     body:has(#gb.gb--tab:not([hidden])) #page-shell {
-      padding-right: 40px;
+      padding-right: 34px;
     }
   }
 </style>
