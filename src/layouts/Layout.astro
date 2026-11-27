@@ -207,8 +207,10 @@ const rssHref = getRelativeLocaleUrl(
     </div>
     <NavProgress />
     <!-- 留言板（2026-11-26 用户定方案 F）：右边缘竖排书签，靠下；点开是底部抽屉。
-         2026-11-26 用户改：只在聊天界面出现，文章列表 / 文章页 / 购买页都不挂 -->
-    {(Astro.url.pathname.replace(/\/+$/, "") || "/") === "/about" && <Guestbook mode="tab" />}
+         2026-11-26 用户改：只在聊天界面出现 —— /about/ 整页挂；
+         首页是 App 外壳（点底栏「聊天」只切面板、URL 不变），所以首页也挂，
+         但由组件自己跟着 #chat-panel 的显隐来显示/隐藏。文章、购买都不挂。 -->
+    {["/", "/about"].includes(Astro.url.pathname.replace(/\/+$/, "") || "/") && <Guestbook mode="tab" />}
     <script>
       import "@/scripts/theme";
     </script>

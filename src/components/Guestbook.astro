@@ -23,12 +23,25 @@ const devApi = "http://127.0.0.1:4401";
 // 要挂到别的域名时再配 PUBLIC_GUESTBOOK_API。
 const prodApi = import.meta.env.PUBLIC_GUESTBOOK_API || "";
 const apiBase = import.meta.env.DEV ? devApi : prodApi;
+
+// 首页是 App 外壳：文章 / 聊天 / 购买 是同一页里的三个面板，切面板不改 URL。
+// 所以首页也渲染书签，但先藏起来，等切到 #chat-panel 才露出来（脚本里同步）。
+const path = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const panelSync = path === "/";
 const isTab = mode === "tab";
 ---
 
 {
   isTab ? (
-    <section id="gb" class="gb gb--tab" data-gb data-mode="tab" data-api={apiBase}>
+    <section
+      id="gb"
+      class="gb gb--tab"
+      data-gb
+      data-mode="tab"
+      data-api={apiBase}
+      data-panel-sync={panelSync ? "1" : undefined}
+      hidden={panelSync}
+    >
       <button type="button" class="gbtab" data-open aria-label="打开留言板">
         <span class="gbtab__title">留言板</span>
         <span class="gbtab__n">
@@ -179,6 +192,11 @@ const isTab = mode === "tab";
   #gb .gbtab__n i,
   #gb [data-count] {
     font-style: normal;
+  }
+
+  /* 首页是 App 外壳：没切到「聊天」面板时，整块书签连同抽屉都不渲染 */
+  #gb.gb--tab[hidden] {
+    display: none !important;
   }
 
   /* tab 的抽屉 */
@@ -632,7 +650,7 @@ const isTab = mode === "tab";
   /* 2026-11-26：书签常驻在右边缘，窄屏上会把正文最后几个字压住。
      只给挂着书签的那一页（聊天页）让出 26px，别的页面不受影响。 */
   @media (max-width: 639px) {
-    body:has(#gb.gb--tab) #page-shell {
+    body:has(#gb.gb--tab:not([hidden])) #page-shell {
       padding-right: 26px;
     }
   }
@@ -865,6 +883,41 @@ const isTab = mode === "tab";
           document.body.style.overflow = "";
         }
       });
+    }
+
+    // 首页（App 外壳）：书签跟着 #chat-panel 的显隐走 —— 切回文章/购买面板就收起
+    if (root.dataset.panelSync === "1") {
+      // 注意：读的是文档里当前的 #gb / #chat-panel，不用闭包里的 root
+      // （面板切换时 DOM 可能被换掉，闭包会指向已摘除的旧节点）
+      const syncTab = () => {
+        const el = document.getElementById("gb");
+        const cp = document.getElementById("chat-panel");
+        if (!el || !cp) return;
+        if (cp.style.display !== "none") el.removeAttribute("hidden");
+        else el.setAttribute("hidden", "");
+      };
+      syncTab();
+
+      const cp = document.getElementById("chat-panel");
+      if (cp) {
+        new MutationObserver(syncTab).observe(cp, {
+          attributes: true,
+          attributeFilter: ["style"],
+        });
+      }
+      // 兜底：底栏/侧栏点一下会在同一个处理函数里把三个面板连着改一遍，
+      // 观察器只看到最后一次；这里统一在点击后补一次同步（只绑一次）。
+      if (!(window as any).__gbPanelClickBound) {
+        (window as any).__gbPanelClickBound = true;
+        document.addEventListener(
+          "click",
+          () => {
+            if (!document.getElementById("chat-panel")) return;
+            setTimeout(syncTab, 60);
+          },
+          true
+        );
+      }
     }
 
     form.addEventListener("submit", e => {
