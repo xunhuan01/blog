@@ -151,7 +151,7 @@ const isTab = mode === "tab";
   /* ── tab：右边缘竖排书签（靠下，手机好按）── */
   #gb .gbtab {
     position: fixed;
-    right: 0;
+    right: 10px; /* 不贴边：手机最右侧是返回手势区，贴边容易被误触/看不见 */
     /* 132 = 底栏 56 + 首页右下那颗标签球（right14/bottom72，直径约48）+ 12px 间距，
        再往下会和标签球叠在一起 */
     bottom: 132px;
@@ -159,34 +159,40 @@ const isTab = mode === "tab";
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 7px;
-    padding: 13px 6px 10px;
-    background: #fff;
-    border: 1px solid #e0e0dc;
-    border-right: 0;
-    border-radius: 9px 0 0 9px;
-    box-shadow: -3px 2px 12px rgba(25, 25, 25, 0.07);
+    gap: 8px;
+    padding: 16px 10px 13px;
+    /* 2026-11-27：原来白底细边、贴在空白处几乎看不见 → 改成深墨块（跟资源墙同族），
+       白字 + 实心阴影，一眼能认出是个可点的入口 */
+    background: #1c1c1b;
+    color: #f2f2f0;
+    border: 0;
+    border-radius: 12px;
+    box-shadow:
+      0 2px 6px rgba(25, 25, 25, 0.18),
+      0 10px 24px rgba(25, 25, 25, 0.26);
     cursor: pointer;
     transition:
       transform 0.18s ease,
       box-shadow 0.18s ease;
   }
   #gb .gbtab:hover {
-    transform: translateX(-2px);
-    box-shadow: -4px 2px 16px rgba(25, 25, 25, 0.12);
+    transform: translateX(-3px);
+    box-shadow:
+      0 4px 10px rgba(25, 25, 25, 0.22),
+      0 14px 30px rgba(25, 25, 25, 0.3);
   }
   #gb .gbtab__title {
     writing-mode: vertical-rl;
     font-family: "Songti SC", "STSong", "SimSun", serif;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1;
-    letter-spacing: 0.16em;
-    color: #1c1c1b;
+    letter-spacing: 0.18em;
+    color: #ffffff;
   }
   #gb .gbtab__n {
-    font-size: 9.5px;
+    font-size: 10.5px;
     line-height: 1;
-    color: #a3a3a0;
+    color: #b9b9b4;
     font-variant-numeric: tabular-nums;
   }
   #gb .gbtab__n i,
@@ -648,10 +654,11 @@ const isTab = mode === "tab";
   }
 
   /* 2026-11-26：书签常驻在右边缘，窄屏上会把正文最后几个字压住。
-     只给挂着书签的那一页（聊天页）让出 26px，别的页面不受影响。 */
+     只给挂着书签的那一页（聊天页）让位；2026-11-27 书签改成离边 10px、宽约 38，
+     让位从 26 提到 40 才够。 */
   @media (max-width: 639px) {
     body:has(#gb.gb--tab:not([hidden])) #page-shell {
-      padding-right: 26px;
+      padding-right: 40px;
     }
   }
 </style>
