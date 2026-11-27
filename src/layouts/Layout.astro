@@ -348,5 +348,49 @@ const rssHref = getRelativeLocaleUrl(
       initSPA();
       document.addEventListener("astro:page-load", initSPA);
     </script>
+    <script is:inline>
+      // 2026-11-27（用户要求）：PWA 装到桌面后没有刷新按钮，点「当前所在」的那个 Tab
+      // 就整页重新加载一次；点别的 Tab 照旧切换面板 / 跳转，不打断原有体验。
+      // 「当前所在」怎么判：首页是 App 外壳（三面板同一页），看目标面板是不是已经显示；
+      // 其它页面就看 URL 和目标的 pathname 是否相同。
+      // 用捕获阶段拦，先于 ClientRouter 和首页的面板切换逻辑。
+      (function () {
+        function norm(p) {
+          return (p || "/").replace(/\/+$/, "") || "/";
+        }
+        document.addEventListener(
+          "click",
+          function (e) {
+            var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+            if (!a) return;
+            if (!a.closest("aside") && !a.closest("nav")) return; // 只认左侧栏和底部导航
+            var href = a.getAttribute("href");
+            if (!href || href.charAt(0) === "#" || /^[a-z]+:/i.test(href)) return;
+
+            var same = false;
+            if (document.getElementById("chat-panel")) {
+              // 首页 App 外壳：目标面板已经亮着 = 就是"当前所在"
+              var id =
+                href === "/about/"
+                  ? "chat-panel"
+                  : href === "/purchase/"
+                    ? "purchase-panel"
+                    : "tags-panel";
+              var panel = document.getElementById(id);
+              same = !!panel && panel.style.display !== "none";
+            } else {
+              same = norm(location.pathname) === norm(new URL(href, location.href).pathname);
+            }
+
+            if (same) {
+              e.preventDefault();
+              e.stopPropagation();
+              location.reload();
+            }
+          },
+          true
+        );
+      })();
+    </script>
   </body>
 </html>
