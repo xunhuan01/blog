@@ -10,38 +10,9 @@
 //   · 青铜/黄金的购买链接从快发卡换成酷发卡（kufaka.com/item/…，我们自己建的三个商品）
 //   · 「怎么选？」第三行文案「想安排外围就可以了」→「想安排外围」
 //   · 「先问客服」从站内 /about/ 改成直接进线路一聊天室（与 ChatHall 的 chat1 同一个地址）
-const tiers = [
-  {
-    id: "bronze",
-    name: "青铜会员",
-    price: "199",
-    desc: ["解锁资源墙 · 会员群 · 付费文章"],
-    href: "https://www.kufaka.com/item/gx7eky",   // 快发卡 → 酷发卡（2026-10-18）
-    cta: "开通",
-    gold: false,
-    limit: "",
-  },
-  {
-    id: "gold",
-    name: "黄金会员",
-    price: "499",
-    desc: ["含青铜会员全部权益", "定金，安排外围找客服私聊"],
-    href: "https://www.kufaka.com/item/dczf9x",   // 快发卡 → 酷发卡（2026-10-18）
-    cta: "开通",
-    gold: false,
-    limit: "",
-  },
-  {
-    id: "diamond",
-    name: "钻石会员",
-    price: "6999",
-    desc: ["含黄金会员全部权益", "《通往性自由之路》"],
-    href: "/通往性自由之路",
-    cta: "服务介绍",
-    gold: true,
-    limit: "限购 500 份",
-  },
-];
+// 2026-11-28：三档数据（含发卡链接）抽到 src/data/membership.ts，作为全站单一数据源；
+//   付费文章密码遮罩里的「购买会员 · ¥199 起」也读同一处，不再出现这边酷发卡、那边快发卡
+import { membershipTiers as tiers } from "@/data/membership";
 
 const first = tiers[0];
 ---

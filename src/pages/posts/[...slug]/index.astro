@@ -13,6 +13,8 @@ import ShareLinks from "./_components/ShareLinks.astro";
 import BackButton from "./_components/BackButton.astro";
 // 「上一篇/下一篇」导航已按用户要求移除（2026-09-21），文末改为「推荐阅读」
 import config from "@/config";
+// 会员档位（含发卡链接）统一取 src/data/membership.ts，与会员组件同一个来源
+import { bronzeTier } from "@/data/membership";
 
 export async function getStaticPaths() {
   const posts = await getCollection("posts");
@@ -187,12 +189,13 @@ const ogImage = ogImageUrl
           <p id="password-error" class="mt-3 text-xs text-red-500 dark:text-red-400 hidden">密码错误，请重试</p>
 
           <!-- 会员购买入口（2026-10-13）：细金线按钮，同资源墙解锁弹层的「购买入口」同款色；点开直接到卡密购买页 -->
+          <!-- 2026-11-28：购买链接由快发卡换成酷发卡青铜档（链接统一取 src/data/membership.ts，与会员界面同一个商品） -->
           <div class="mt-6 border-t border-neutral-200 pt-4 dark:border-neutral-700">
             <a
-              href="https://w.kami.vip/s/4eQNQ28G"
+              href={bronzeTier.href}
               class="flex h-10 w-full items-center justify-center rounded-lg text-[13.5px] tracking-wide no-underline"
               style="color:#9a7a26;border:1px solid #e4cf9c;background:linear-gradient(180deg,#fffdf7,#fbf4e2)"
-            >购买会员 · ¥199 起</a>
+            >购买会员 · ¥{bronzeTier.price} 起</a>
           </div>
         </div>
       </div>
